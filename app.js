@@ -1,5 +1,5 @@
 const SUPABASE_URL = "https://fckhkuamvuhgsbofncjh.supabase.co";
-const SUPABASE_KEY = "sb_publishable_yioP3kIKXyRowVXpvPUpMw_GNQotMVy";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZja2hrdWFtdnVoZ3Nib2ZuY2poIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgxOTk2OTUsImV4cCI6MjEwMzc3NTY5NX0.FAwiXp4vqfsqPrTTmxtx4oISz-A_bAoJkLVOicajJVY";
 // Cargar y escuchar datos de Supabase
 async function fetchLogs() {
   try {
