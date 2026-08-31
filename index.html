@@ -102,6 +102,70 @@
           </div>
         </div>
       </section>
+
+      <div class="card" style="margin-top: 20px;">
+  <h3>🥦 Despensa y Ingredientes Guardados</h3>
+  <p class="modal-sub">Añade tus alimentos base con sus calorías y proteínas para usarlos en el creador de recetas.</p>
+  
+  <form id="ingredient-form" style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px;">
+    <input type="text" id="ing-name" placeholder="Nombre (ej: Arroz basmati)" required style="flex: 2;">
+    <input type="number" id="ing-weight" placeholder="Peso base (g)" required style="flex: 1;">
+    <input type="number" id="ing-cal" placeholder="Calorías" required style="flex: 1;">
+    <input type="number" id="ing-prot" placeholder="Proteínas (g)" required style="flex: 1;">
+    <button type="submit" class="btn-primary" style="flex: 1;">+ Añadir Ingrediente</button>
+  </form>
+
+  <div id="ingredients-list" class="pill-container" style="display: flex; gap: 6px; flex-wrap: wrap;"></div>
+</div>
+
+<div class="card" style="margin-top: 20px; border: 1px solid #38bdf8;">
+  <h3>👨‍🍳 Crea tu Receta con IA</h3>
+  <p class="modal-sub">Selecciona ingredientes de tu despensa para que el sistema te proponga un plato y sus macros totales.</p>
+  
+  <div id="recipe-builder-selector" style="margin-bottom: 12px; display: flex; gap: 6px; flex-wrap: wrap;"></div>
+
+  <button type="button" id="btn-generate-recipe" class="btn-primary" style="width: 100%;">✨ Generar Receta y Calcular Macros</button>
+
+  <div id="recipe-output-box" style="margin-top: 15px; background: rgba(56, 189, 248, 0.05); padding: 12px; border-radius: 8px; display: none;">
+    <h4 id="output-recipe-title" style="color: #38bdf8; margin-bottom: 6px;"></h4>
+    <p id="output-recipe-desc" style="font-size: 0.9rem; margin-bottom: 8px;"></p>
+    <div id="output-recipe-macros" style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 10px;"></div>
+    <button type="button" id="btn-save-generated-recipe" class="btn-secondary" style="font-size: 0.85rem;">📥 Guardar en "Mis Recetas"</button>
+  </div>
+</div>
+
+<div class="card" style="margin-top: 20px;">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+    <h3>📖 Mis Recetas Guardadas</h3>
+    <button type="button" id="btn-open-manual-recipe" class="btn-primary" style="padding: 6px 12px; font-size: 0.85rem;">+ Nueva Receta</button>
+  </div>
+  <div id="saved-recipes-container"></div>
+</div>
+
+<div id="manual-recipe-modal" class="modal-overlay">
+  <div class="modal-card">
+    <h3>📝 Añadir Receta Manual</h3>
+    <form id="manual-recipe-form" style="margin-top: 12px;">
+      <div class="form-group" style="margin-bottom: 10px;">
+        <label>Título de la Receta:</label>
+        <input type="text" id="man-title" placeholder="Ej: Pollo al curry fitness" required style="width: 100%; padding: 8px;">
+      </div>
+      <div class="form-group" style="margin-bottom: 10px;">
+        <label>Ingredientes y Pasos:</label>
+        <textarea id="man-desc" placeholder="Describe los pasos y cantidades..." rows="3" required style="width: 100%; padding: 8px;"></textarea>
+      </div>
+      <div class="form-row" style="display: flex; gap: 8px; margin-bottom: 15px;">
+        <div style="flex: 1;"><label>Calorías (kcal):</label><input type="number" id="man-cal" placeholder="500" required style="width: 100%; padding: 6px;"></div>
+        <div style="flex: 1;"><label>Proteínas (g):</label><input type="number" id="man-prot" placeholder="40" required style="width: 100%; padding: 6px;"></div>
+      </div>
+      <div style="display: flex; gap: 8px;">
+        <button type="submit" class="btn-primary" style="flex: 1;">Guardar Receta</button>
+        <button type="button" id="btn-close-manual-recipe" class="btn-secondary" style="flex: 1;">Cancelar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
     </main>
 
     <!-- PESTAÑA 2: NUTRICIÓN, RECETAS PROPIAS Y DIETA -->

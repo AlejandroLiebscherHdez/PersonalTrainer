@@ -136,6 +136,7 @@ const ROUTINE_TEMPLATES = {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
+    initRecipeSystem();
     setupCheckinModal();
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -1708,3 +1709,171 @@ function setupCheckinModal() {
     });
   }
 }
+
+// =======================================================
+// GESTOR DE INGREDIENTES Y CREACIÓN DE RECETAS
+// =======================================================
+let userIngredients = JSON.parse(localStorage.getItem('userIngredients')) || [
+  { name: 'Arroz', weight: 100, calories: 350, protein: 7 },
+  { name: 'Pechuga de Pollo', weight: 150, calories: 250, protein: 45 },
+  { name: 'Verduras variadas', weight: 200, calories: 70, protein: 3 }
+];
+
+let savedRecipes = JSON.parse(localStorage.getItem('savedRecipes')) || [];
+let lastGeneratedRecipe = null;
+
+function initRecipeSystem() {
+  renderIngredients();
+  renderRecipeSelector();
+  renderSavedRecipes();
+
+  const ingForm = document.getElementById('ingredient-form');
+  if (ingForm) {
+    ingForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const newIng = {
+        name: document.getElementById('ing-name').value,
+        weight: Number(document.getElementById('ing-weight').value),
+        calories: Number(document.getElementById('ing-cal').value),
+        protein: Number(document.getElementById('ing-prot').value)
+      };
+      userIngredients.push(newIng);
+      localStorage.setItem('userIngredients', JSON.stringify(userIngredients));
+      ingForm.reset();
+      renderIngredients();
+      renderRecipeSelector();
+    });
+  }
+
+  const btnGen = document.getElementById('btn-generate-recipe');
+  if (btnGen) {
+    btnGen.addEventListener('click', () => {
+      const checkedBoxes = document.querySelectorAll('.recipe-ing-checkbox:checked');
+      if (checkedBoxes.length === 0) {
+        alert('Selecciona al menos un ingrediente de tu despensa.');
+        return;
+      }
+
+      const selectedNames = Array.from(checkedBoxes).map(cb => cb.value);
+      const matchedIngs = userIngredients.filter(i => selectedNames.includes(i.name));
+
+      const totalCal = matchedIngs.reduce((sum, i) => sum + i.calories, 0);
+      const totalProt = matchedIngs.reduce((sum, i) => sum + i.protein, 0);
+      
+      let recipeTitle = "Plato Combinado Fitness";
+      let recipeDesc = `Mezcla salteada u horneada de ${selectedNames.join(', ')}. Cocinar con una cucharada de aceite de oliva y especias al gusto.`;
+
+      if (selectedNames.includes('Arroz') && selectedNames.includes('Pechuga de Pollo')) {
+        recipeTitle = "Bowl de Arroz y Pollo Estilo Fitness";
+        recipeDesc = "Saltea el pollo troceado con tus verduras, añade el arroz cocido y mezcla con salsa de soja baja en sodio.";
+      } else if (selectedNames.length >= 2) {
+        recipeTitle = `Salteado Creativo de ${selectedNames[0]}`;
+        recipeDesc = `Integra todos los ingredientes en una sartén a fuego medio con un fondo de caldo o agua hasta conseguir la textura óptima.`;
+      }
+
+      lastGeneratedRecipe = { title: recipeTitle, desc: recipeDesc, calories: totalCal, protein: totalProt };
+
+      document.getElementById('output-recipe-title').innerText = recipeTitle;
+      document.getElementById('output-recipe-desc').innerText = recipeDesc;
+      document.getElementById('output-recipe-macros').innerText = `🔥 Calorías totales: ${totalCal} kcal | 🥩 Proteínas: ${totalProt}g`;
+      document.getElementById('recipe-output-box').style.display = 'block';
+    });
+  }
+
+  const btnSaveGen = document.getElementById('btn-save-generated-recipe');
+  if (btnSaveGen) {
+    btnSaveGen.addEventListener('click', () => {
+      if (!lastGeneratedRecipe) return;
+      savedRecipes.push(lastGeneratedRecipe);
+      localStorage.setItem('savedRecipes', JSON.stringify(savedRecipes));
+      renderSavedRecipes();
+      alert('¡Receta guardada en tu recetario con éxito!');
+      document.getElementById('recipe-output-box').style.display = 'none';
+    });
+  }
+
+  const modalMan = document.getElementById('manual-recipe-modal');
+  const btnOpenMan = document.getElementById('btn-open-manual-recipe');
+  const btnCloseMan = document.getElementById('btn-close-manual-recipe');
+  const formMan = document.getElementById('manual-recipe-form');
+
+  if (btnOpenMan && modalMan) {
+    btnOpenMan.addEventListener('click', () => modalMan.classList.add('open'));
+  }
+  if (btnCloseMan && modalMan) {
+    btnCloseMan.addEventListener('click', () => modalMan.classList.remove('open'));
+  }
+
+  if (formMan) {
+    formMan.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const newRec = {
+        title: document.getElementById('man-title').value,
+        desc: document.getElementById('man-desc').value,
+        calories: Number(document.getElementById('man-cal').value),
+        protein: Number(document.getElementById('man-prot').value)
+      };
+      savedRecipes.push(newRec);
+      localStorage.setItem('savedRecipes', JSON.stringify(savedRecipes));
+      formMan.reset();
+      modalMan.classList.remove('open');
+      renderSavedRecipes();
+    });
+  }
+}
+
+function renderIngredients() {
+  const container = document.getElementById('ingredients-list');
+  if (!container) return;
+  container.innerHTML = userIngredients.map((ing, idx) => `
+    <span class="reading-pill" style="font-size: 0.8rem; padding: 4px 8px; display: inline-flex; align-items: center; gap: 6px;">
+      <strong>${ing.name}</strong> (${ing.weight}g) - ${ing.calories} kcal, ${ing.protein}g P
+      <button onclick="removeIngredient(${idx})" style="background:none; border:none; color:#ef4444; cursor:pointer; font-weight:bold;">&times;</button>
+    </span>
+  `).join('');
+}
+
+window.removeIngredient = function(index) {
+  userIngredients.splice(index, 1);
+  localStorage.setItem('userIngredients', JSON.stringify(userIngredients));
+  renderIngredients();
+  renderRecipeSelector();
+};
+
+function renderRecipeSelector() {
+  const container = document.getElementById('recipe-builder-selector');
+  if (!container) return;
+  container.innerHTML = userIngredients.map(ing => `
+    <label style="background: rgba(255,255,255,0.05); padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+      <input type="checkbox" value="${ing.name}" class="recipe-ing-checkbox" style="accent-color: #38bdf8;">
+      ${ing.name} (${ing.calories} kcal)
+    </label>
+  `).join('');
+}
+
+function renderSavedRecipes() {
+  const container = document.getElementById('saved-recipes-container');
+  if (!container) return;
+  if (savedRecipes.length === 0) {
+    container.innerHTML = '<p class="empty-msg" style="color: #94a3b8; font-size: 0.85rem;">No tienes recetas guardadas todavía. Genera una con IA o añádela manualmente.</p>';
+    return;
+  }
+  container.innerHTML = savedRecipes.map((rec, idx) => `
+    <div class="reading-pill" style="margin-bottom: 8px; display: flex; justify-content: space-between; align-items: flex-start;">
+      <div>
+        <strong style="color: #38bdf8;">🍳 ${rec.title}</strong><br>
+        <small style="color: #94a3b8; display: block; margin: 4px 0;">${rec.desc}</small>
+        <span style="font-size: 0.75rem; background: rgba(56, 189, 248, 0.1); color: #38bdf8; padding: 2px 6px; border-radius: 4px;">
+          🔥 ${rec.calories} kcal | 🥩 ${rec.protein}g Proteína
+        </span>
+      </div>
+      <button onclick="removeRecipe(${idx})" style="background:none; border:none; color:#ef4444; cursor:pointer; font-size: 1rem;">&times;</button>
+    </div>
+  `).join('');
+}
+
+window.removeRecipe = function(index) {
+  savedRecipes.splice(index, 1);
+  localStorage.setItem('savedRecipes', JSON.stringify(savedRecipes));
+  renderSavedRecipes();
+};
