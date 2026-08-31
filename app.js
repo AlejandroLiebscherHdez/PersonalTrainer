@@ -15,18 +15,8 @@ let allLogs = [];
 let allHealth = [];
 let allWorkouts = [];
 
-let userProfile = JSON.parse(localStorage.getItem('userProfile')) || {
-  name: "Alejandro",
-  age: 24,
-  height: 178,
-  weight: 80.0,
-  targetLossKg: 4,
-  weeks: 8,
-  habitType: "bombo",
-  customDailyCost: 1.70,
-  workoutFocus: "fullbody",
-  workoutDays: 4
-};
+const savedProfileRaw = localStorage.getItem('userProfile');
+let userProfile = savedProfileRaw ? JSON.parse(savedProfileRaw) : null;
 
 let dailyChecklist = JSON.parse(localStorage.getItem('dailyChecklist_' + new Date().toISOString().split('T')[0])) || {
   water: false,
@@ -38,7 +28,44 @@ let dailyChecklist = JSON.parse(localStorage.getItem('dailyChecklist_' + new Dat
   sleep: false
 };
 
+// Base de datos de rutinas expandida
+const ROUTINE_DATABASE = {
+  fullbody: [
+    { day: "Lunes", focus: "Full Body A (Énfasis Empuje & Cuádriceps)", exercises: [["Sentadilla trasera con barra / Prensa", "4 x 8-10"], ["Press de banca plano", "4 x 8-10"], ["Remo con barra / polea", "4 x 10"], ["Elevaciones laterales con mancuernas", "3 x 12-15"], ["Plancha abdominal", "3 x 45s"]] },
+    { day: "Miércoles", focus: "Full Body B (Énfasis Tracción & Isquios)", exercises: [["Peso muerto rumano", "4 x 8-10"], ["Press militar mancuernas / barra", "4 x 8-10"], ["Dominadas / Jalón al pecho", "4 x 8-10"], ["Fondos en paralelas / Flexiones", "3 x 10-12"], ["Curl de bíceps", "3 x 12"]] },
+    { day: "Viernes", focus: "Full Body C (Hipertrofia & Glúteos)", exercises: [["Hip Thrust con barra", "4 x 10-12"], ["Sentadilla búlgara", "3 x 10/pierna"], ["Press inclinado mancuernas", "4 x 10"], ["Remo unilateral con mancuerna", "3 x 10"], ["Extensión de tríceps en polea", "3 x 12"]] }
+  ],
+  ppl: [
+    { day: "Día 1", focus: "Push (Pecho, Hombro & Tríceps)", exercises: [["Press banca plano", "4 x 8"], ["Press inclinado con mancuernas", "4 x 10"], ["Press militar de pie", "3 x 8-10"], ["Elevaciones laterales", "4 x 15"], ["Extensión tríceps en polea", "3 x 12"]] },
+    { day: "Día 2", focus: "Pull (Espalda, Deltoides Posterior & Bíceps)", exercises: [["Jalón al pecho / Dominadas", "4 x 8-10"], ["Remo en polea baja", "4 x 10"], ["Pájaros para posterior", "3 x 15"], ["Curl bíceps barra Z", "3 x 10"], ["Curl martillo mancuernas", "3 x 12"]] },
+    { day: "Día 3", focus: "Legs (Cuádriceps, Isquios & Glúteos)", exercises: [["Sentadilla con barra", "4 x 8"], ["Peso muerto rumano", "4 x 10"], ["Prensa de piernas", "3 x 12"], ["Curl femoral tumbado", "3 x 12"], ["Gemelos de pie", "4 x 15"]] },
+    { day: "Día 4", focus: "Push / Pull Hipertrofia", exercises: [["Press con mancuernas", "4 x 10"], ["Remo con barra", "4 x 10"], ["Aperturas en polea", "3 x 12"], ["Supererie Bíceps + Tríceps", "3 x 12"]] }
+  ],
+  torso_pierna: [
+    { day: "Lunes", focus: "Torso Fuerza", exercises: [["Press banca plano", "4 x 6-8"], ["Remo con barra", "4 x 6-8"], ["Press militar", "3 x 8"], ["Jalón al pecho", "3 x 10"]] },
+    { day: "Martes", focus: "Pierna Fuerza", exercises: [["Sentadilla", "4 x 6-8"], ["Peso muerto rumano", "4 x 8"], ["Prensa", "3 x 10"], ["Gemelos", "4 x 12"]] },
+    { day: "Jueves", focus: "Torso Hipertrofia", exercises: [["Press inclinado mancuernas", "4 x 10-12"], ["Remo polea baja", "4 x 10-12"], ["Elevaciones laterales", "4 x 15"], ["Bíceps / Tríceps", "3 x 12"]] },
+    { day: "Viernes", focus: "Pierna Hipertrofia & Core", exercises: [["Sentadilla búlgara", "3 x 10/pierna"], ["Hip Thrust", "4 x 10-12"], ["Curl femoral", "4 x 12"], ["Abdominales en polea", "4 x 15"]] }
+  ],
+  chest_arms: [
+    { day: "Lunes", focus: "Pecho Pesado & Bíceps", exercises: [["Press banca plano barra", "4 x 6-8"], ["Press inclinado mancuernas", "4 x 10"], ["Cruces de polea", "3 x 12"], ["Curl bíceps barra recta", "4 x 10"], ["Curl en banco inclinado", "3 x 12"]] },
+    { day: "Miércoles", focus: "Hombro & Tríceps", exercises: [["Press militar", "4 x 8"], ["Elevaciones laterales polea", "4 x 15"], ["Fondos entre paralelas", "4 x 10"], ["Press francés barra Z", "3 x 10"], ["Extensión polea cuerda", "3 x 12"]] },
+    { day: "Viernes", focus: "Volumen Torso & Brazos", exercises: [["Press declinado / Fondos", "4 x 10"], ["Aperturas mancuernas", "3 x 12"], ["Curl martillo", "4 x 12"], ["Patada de tríceps", "3 x 12"]] }
+  ],
+  back_shoulders: [
+    { day: "Lunes", focus: "Espalda Amplitud (Dorsal)", exercises: [["Dominadas lastradas / neutras", "4 x 6-8"], ["Jalón al pecho agarre cerrado", "4 x 10"], ["Pullover en polea alta", "3 x 12"], ["Face Pulls", "4 x 15"]] },
+    { day: "Miércoles", focus: "Hombro 3D & Trapecio", exercises: [["Press con mancuernas sentado", "4 x 8-10"], ["Elevaciones laterales pesadas + drop", "4 x 12-15"], ["Pájaros en máquina", "4 x 15"], ["Encogimientos trapecio", "4 x 12"]] },
+    { day: "Viernes", focus: "Espalda Densidad & Lumbar", exercises: [["Remo con barra T", "4 x 8"], ["Remo unilateral mancuerna", "4 x 10"], ["Hiperextensiones lumbares", "3 x 15"], ["Planchas laterales", "3 x 45s"]] }
+  ],
+  legs_glutes: [
+    { day: "Lunes", focus: "Cuádriceps & Aductores", exercises: [["Sentadilla trasera", "4 x 8"], ["Prensa 45 grados", "4 x 10"], ["Zancadas con mancuerna", "3 x 12/pierna"], ["Extensiones cuádriceps", "3 x 15"]] },
+    { day: "Miércoles", focus: "Cadena Posterior & Glúteo", exercises: [["Hip Thrust con barra", "4 x 8-10"], ["Peso muerto rumano", "4 x 8-10"], ["Curl femoral tumbado", "4 x 12"], ["Abductores en máquina", "4 x 15"]] },
+    { day: "Viernes", focus: "Pierna Completa & Gemelos", exercises: [["Sentadilla búlgara", "3 x 10/pierna"], ["Prensa unilateral", "3 x 12"], ["Elevación gemelos de pie", "4 x 15"], ["Elevación gemelos sentado", "4 x 15"]] }
+  ]
+};
+
 document.addEventListener('DOMContentLoaded', () => {
+  // Pestañas
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -61,42 +88,102 @@ document.addEventListener('DOMContentLoaded', () => {
   initApp();
 });
 
-// Planes de entrenamiento predefinidos según enfoque
-const ROUTINE_DATABASE = {
-  fullbody: [
-    { day: "Lunes", focus: "Fuerza Tren Superior + Core", exercises: [["Press banca con mancuernas", "4 x 8-10"], ["Remo con barra / polea", "4 x 10"], ["Press militar mancuernas", "3 x 10"], ["Plancha abdominal", "3 x 45s"]] },
-    { day: "Martes", focus: "⚽ Fútbol / Cardio Alta Intensidad", exercises: [["Partido o entrenamiento de fútbol", "60-90 min"], ["Estiramientos de cadera y movilidad", "10 min"]] },
-    { day: "Jueves", focus: "Tren Inferior & Potencia", exercises: [["Sentadilla con barra o búlgara", "4 x 8-10"], ["Peso muerto rumano (isquios)", "4 x 10"], ["Prensa de piernas / Extensiones", "3 x 12"], ["Elevación de talones (gemelos)", "4 x 15"]] },
-    { day: "Viernes / Sábado", focus: "Torso & Brazos / Segundo Partido", exercises: [["Dominadas o Jalón al pecho", "4 x 8-10"], ["Fondos en paralelas o flexiones", "3 x 12"], ["Curl de bíceps + Extensión tríceps", "3 x 12 c/u"], ["Caminata de recuperación activa", "40 min"]] }
-  ],
-  upper: [
-    { day: "Lunes", focus: "Pecho & Tríceps (Empuje Pesado)", exercises: [["Press banca plano", "4 x 8"], ["Press inclinado mancuernas", "4 x 10"], ["Aperturas en polea / Cruces", "3 x 12"], ["Fondos de tríceps", "3 x 10"], ["Extensión tríceps en polea", "3 x 12"]] },
-    { day: "Martes", focus: "Espalda & Bíceps (Tracción)", exercises: [["Jalón al pecho / Dominadas", "4 x 8-10"], ["Remo unilateral con mancuerna", "4 x 10"], ["Remo en polea baja (agarre estrecho)", "3 x 12"], ["Curl bíceps con barra Z", "3 x 10"], ["Curl martillo mancuernas", "3 x 12"]] },
-    { day: "Jueves", focus: "Hombro, Trapecio & Core", exercises: [["Press militar de pie / sentado", "4 x 8-10"], ["Elevaciones laterales con mancuernas", "4 x 15"], ["Pájaros para deltoides posterior", "3 x 15"], ["Encogimientos de trapecio", "3 x 12"], ["Elevación de piernas colgado", "3 x 15"]] },
-    { day: "Viernes", focus: "Hipertrofia Torso Completo", exercises: [["Press superior con mancuernas", "4 x 10"], ["Remo con barra T", "4 x 10"], ["Supererie Bíceps + Tríceps", "4 x 12"], ["Face Pulls en polea", "3 x 15"]] }
-  ],
-  lower: [
-    { day: "Lunes", focus: "Cuádriceps & Glúteo", exercises: [["Sentadilla trasera profunda", "4 x 8"], ["Prensa inclinada", "4 x 10"], ["Zancadas caminando con mancuernas", "3 x 12/pierna"], ["Extensiones de cuádriceps", "3 x 15"]] },
-    { day: "Miércoles", focus: "Isquiosurales, Glúteo Mayor & Gemelos", exercises: [["Hip Thrust con barra", "4 x 10"], ["Peso muerto rumano", "4 x 8-10"], ["Curl femoral tumbado", "4 x 12"], ["Elevación de gemelos en máquina", "4 x 15"]] },
-    { day: "Viernes", focus: "Pierna Completa & Core Atlético", exercises: [["Sentadilla búlgara", "3 x 10/pierna"], ["Prensa unilateral", "3 x 12"], ["Abductores en máquina", "3 x 15"], ["Rueda abdominal / Planchas", "4 x 45s"]] }
-  ],
-  torso_pierna: [
-    { day: "Lunes", focus: "Torso Fuerza", exercises: [["Press de banca plano", "4 x 6-8"], ["Remo con barra", "4 x 6-8"], ["Press militar con mancuernas", "3 x 8-10"], ["Jalón al pecho", "3 x 10"]] },
-    { day: "Martes", focus: "Pierna Fuerza", exercises: [["Sentadilla con barra", "4 x 6-8"], ["Peso muerto rumano", "4 x 8"], ["Prensa de piernas", "3 x 10"], ["Gemelos de pie", "4 x 12"]] },
-    { day: "Jueves", focus: "Torso Hipertrofia", exercises: [["Press inclinado mancuernas", "4 x 10-12"], ["Remo polea baja", "4 x 10-12"], ["Elevaciones laterales", "4 x 12-15"], ["Superserie Bíceps / Tríceps", "3 x 12"]] },
-    { day: "Viernes", focus: "Pierna Hipertrofia & Core", exercises: [["Sentadilla búlgara", "3 x 10/pierna"], ["Hip Thrust", "4 x 10-12"], ["Curl femoral", "4 x 12"], ["Abdominales en polea", "4 x 15"]] }
-  ]
-};
+// Onboarding & Modal de Perfil
+function setupProfileModal() {
+  const modal = document.getElementById('profile-modal');
+  const btnOpen = document.getElementById('btn-open-profile');
+  const btnClose = document.getElementById('btn-close-modal');
+  const form = document.getElementById('profile-form');
 
-// Generador de Rutina
+  const inLoss = document.getElementById('prof-target-loss');
+  const inWeeks = document.getElementById('prof-weeks');
+  const valLoss = document.getElementById('val-target-loss');
+  const valWeeks = document.getElementById('val-weeks');
+  const preview = document.getElementById('preview-plan');
+
+  function updatePlanPreview() {
+    valLoss.innerText = inLoss.value;
+    valWeeks.innerText = inWeeks.value;
+    const kg = Number(inLoss.value);
+    const w = Number(inWeeks.value);
+    const weeklyRate = (kg / w).toFixed(2);
+    const dailyDeficit = Math.round((kg * 7700) / (w * 7));
+
+    let safety = "🟢 Ritmo óptimo y sostenible";
+    if (weeklyRate > 1.0) safety = "🔴 Déficit agresivo";
+    else if (weeklyRate > 0.7) safety = "🟡 Ritmo moderado / rápido";
+
+    preview.innerHTML = `
+      <strong>Meta:</strong> Bajar ${kg} kg en ${w} semanas (${weeklyRate} kg/sem).<br>
+      <strong>Déficit calórico diario:</strong> -${dailyDeficit} kcal/día.<br>
+      <small>${safety}</small>
+    `;
+  }
+
+  inLoss.addEventListener('input', updatePlanPreview);
+  inWeeks.addEventListener('input', updatePlanPreview);
+
+  // Si no hay perfil guardado, forzar apertura al cargar la página
+  if (!userProfile) {
+    userProfile = {
+      name: "Alejandro",
+      age: 24,
+      height: 178,
+      weight: 80.0,
+      targetLossKg: 4,
+      weeks: 8,
+      habitType: "bombo",
+      customDailyCost: 1.70,
+      workoutFocus: "fullbody",
+      workoutDays: 4
+    };
+    modal.classList.add('open');
+    btnClose.style.display = 'none'; // Obligatorio guardar primero
+  }
+
+  btnOpen.addEventListener('click', () => {
+    document.getElementById('prof-name').value = userProfile.name;
+    document.getElementById('prof-age').value = userProfile.age;
+    document.getElementById('prof-height').value = userProfile.height;
+    document.getElementById('prof-weight').value = userProfile.weight;
+    inLoss.value = userProfile.targetLossKg;
+    inWeeks.value = userProfile.weeks;
+    updatePlanPreview();
+    btnClose.style.display = 'block';
+    modal.classList.add('open');
+  });
+
+  btnClose.addEventListener('click', () => modal.classList.remove('open'));
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    userProfile = {
+      ...userProfile,
+      name: document.getElementById('prof-name').value,
+      age: Number(document.getElementById('prof-age').value),
+      height: Number(document.getElementById('prof-height').value),
+      weight: Number(document.getElementById('prof-weight').value),
+      targetLossKg: Number(inLoss.value),
+      weeks: Number(inWeeks.value)
+    };
+    localStorage.setItem('userProfile', JSON.stringify(userProfile));
+    modal.classList.remove('open');
+    document.getElementById('user-greeting').innerHTML = `${userProfile.name} <span>Trainer</span>`;
+    document.getElementById('user-goal-subtitle').innerText = `Meta: Bajar ${userProfile.targetLossKg} kg en ${userProfile.weeks} semanas`;
+    renderCoachEngine();
+    renderHeartZones();
+  });
+}
+
+// Generador de Rutinas
 function setupRoutineGenerator() {
   const selectFocus = document.getElementById('workout-focus');
   const selectDays = document.getElementById('workout-days-week');
   const btnGen = document.getElementById('btn-generate-routine');
   const container = document.getElementById('weekly-routine-container');
 
-  if (selectFocus) selectFocus.value = userProfile.workoutFocus || 'fullbody';
-  if (selectDays) selectDays.value = userProfile.workoutDays || 4;
+  if (userProfile.workoutFocus && selectFocus) selectFocus.value = userProfile.workoutFocus;
+  if (userProfile.workoutDays && selectDays) selectDays.value = userProfile.workoutDays;
 
   function renderRoutine() {
     const focus = selectFocus.value;
@@ -107,9 +194,14 @@ function setupRoutineGenerator() {
     userProfile.workoutDays = daysCount;
     localStorage.setItem('userProfile', JSON.stringify(userProfile));
 
-    routine = routine.slice(0, daysCount);
+    // Si pide más días de los que tiene la plantilla base, duplica inteligentemente
+    let renderedList = [...routine];
+    while (renderedList.length < daysCount) {
+      renderedList.push({ day: `Día Extra ${renderedList.length + 1}`, focus: "Cardio LISS / Fútbol / Movilidad", exercises: [["Partido o carrera continua", "45-60 min"], ["Estiramientos completos", "15 min"]] });
+    }
+    renderedList = renderedList.slice(0, daysCount);
 
-    container.innerHTML = routine.map(r => `
+    container.innerHTML = renderedList.map(r => `
       <div class="routine-day-card">
         <div class="routine-day-header">
           <span class="routine-day-name">${r.day}</span>
@@ -129,6 +221,26 @@ function setupRoutineGenerator() {
 
   if (btnGen) btnGen.addEventListener('click', renderRoutine);
   renderRoutine();
+}
+
+// Zonas Cardíacas
+function renderHeartZones() {
+  const container = document.getElementById('heart-zones-box');
+  if (!container) return;
+
+  const maxHr = 220 - userProfile.age;
+  const z2_min = Math.round(maxHr * 0.60);
+  const z2_max = Math.round(maxHr * 0.70);
+  const z3_max = Math.round(maxHr * 0.80);
+  const z4_max = Math.round(maxHr * 0.90);
+
+  container.innerHTML = `
+    <div class="zone-row"><span>Zona 1 (Recuperación):</span> <strong>< ${z2_min} bpm</strong></div>
+    <div class="zone-row"><span style="color: #10b981;">Zona 2 (Quema Grasa / Base):</span> <strong style="color: #10b981;">${z2_min} - ${z2_max} bpm</strong></div>
+    <div class="zone-row"><span>Zona 3 (Aeróbica / Fútbol):</span> <strong>${z2_max + 1} - ${z3_max} bpm</strong></div>
+    <div class="zone-row"><span style="color: #f59e0b;">Zona 4 (Umbral Anaeróbico):</span> <strong style="color: #f59e0b;">${z3_max + 1} - ${z4_max} bpm</strong></div>
+    <div class="zone-row"><span style="color: #ef4444;">Zona 5 (Máximo Esfuerzo):</span> <strong style="color: #ef4444;">> ${z4_max} bpm</strong></div>
+  `;
 }
 
 function getDailyCost() {
@@ -161,6 +273,15 @@ function updateTimerAndSavings() {
   const savedMoney = (fractionDays * dailyCost).toFixed(2);
   const moneyEl = document.getElementById('metric-money-saved');
   if (moneyEl) moneyEl.innerText = `${savedMoney} €`;
+
+  // Barra de recuperación pulmonar
+  const dopPercent = Math.min(100, Math.round(20 + (days * 5)));
+  const dopEl = document.getElementById('prog-dop-val');
+  const dopBar = document.getElementById('prog-dop-bar');
+  if (dopEl && dopBar) {
+    dopEl.innerText = `${dopPercent}%`;
+    dopBar.style.width = `${dopPercent}%`;
+  }
 }
 setInterval(updateTimerAndSavings, 1000);
 updateTimerAndSavings();
@@ -186,6 +307,7 @@ async function loadData() {
     renderBpmChart();
     renderWorkoutsList();
     renderDiagnostic();
+    renderHeartZones();
   } catch (err) {
     console.error("Error cargando datos:", err);
   }
@@ -217,9 +339,9 @@ function renderCoachEngine() {
 
   let adviceHTML = '';
   if (todayWorkouts.length > 0) {
-    adviceHTML = `<p>🔥 <strong>¡Día de entreno activo!</strong> Gasto adicional de +${workoutBurn} kcal. Tu margen sube a <strong>${finalCalorieTarget} kcal</strong> para nutrir masa muscular sin frenar la definición.</p>`;
+    adviceHTML = `<p>🔥 <strong>¡Día de alto gasto!</strong> Gasto adicional de +${workoutBurn} kcal. Tu margen sube a <strong>${finalCalorieTarget} kcal</strong> para recuperar glucógeno sin ganar grasa.</p>`;
   } else if (todaySteps > 8000) {
-    adviceHTML = `<p>🚶‍♂️ <strong>Gran actividad de pasos:</strong> Llevas ${todaySteps.toLocaleString()} pasos hoy (+${stepsBurn} kcal). Mantente en <strong>${finalCalorieTarget} kcal</strong>.</p>`;
+    adviceHTML = `<p>🚶‍♂️ <strong>Gran volumen de pasos:</strong> Llevas ${todaySteps.toLocaleString()} pasos hoy (+${stepsBurn} kcal). Mantente en <strong>${finalCalorieTarget} kcal</strong>.</p>`;
   } else {
     adviceHTML = `<p>🎯 <strong>Día de recuperación:</strong> Para cumplir tu meta de perder <strong>${userProfile.targetLossKg} kg en ${userProfile.weeks} semanas</strong>, consume <strong>${finalCalorieTarget} kcal</strong>.</p>`;
   }
@@ -324,7 +446,7 @@ function renderWorkoutsList() {
   if (!container) return;
 
   if (!Array.isArray(allWorkouts) || allWorkouts.length === 0) {
-    container.innerHTML = '<p class="empty-msg">No hay entrenamientos del reloj registrados todavía.</p>';
+    container.innerHTML = '<p class="empty-msg">No hay entrenamientos registrados todavía.</p>';
     return;
   }
 
@@ -356,7 +478,7 @@ function renderDiagnostic() {
 
   if (latest < 60) statusHTML += `🟢 <strong>Rango atlético:</strong> Alta eficiencia cardiovascular y tono vagal óptimo.`;
   else if (latest <= 75) statusHTML += `🟢 <strong>Rango óptimo:</strong> Tu corazón recupera adecuadamente.`;
-  else if (latest <= 88) statusHTML += `🟡 <strong>Rango estimulado:</strong> Fatiga o estrés simpático. Hidrátate bien y prioriza el descanso.`;
+  else if (latest <= 88) statusHTML += `🟡 <strong>Rango estimulado:</strong> Fatiga o estrés simpático. Hidrátate bien y descansa.`;
   else statusHTML += `🔴 <strong>Rango elevado:</strong> Tu sistema simpático está activo. Respira hondo y descansa.`;
 
   container.innerHTML = statusHTML;
@@ -448,74 +570,8 @@ function setupBreathGuide() {
       clearInterval(breathInterval);
       guideBox.style.display = 'none';
       btn.style.display = 'block';
-      alert('¡Sesión completada! Tu tono vagal ha recibido el estímulo de descompresión.');
+      alert('¡Sesión completada!');
     }, 60000);
-  });
-}
-
-function setupProfileModal() {
-  const modal = document.getElementById('profile-modal');
-  const btnOpen = document.getElementById('btn-open-profile');
-  const btnClose = document.getElementById('btn-close-modal');
-  const form = document.getElementById('profile-form');
-
-  const inLoss = document.getElementById('prof-target-loss');
-  const inWeeks = document.getElementById('prof-weeks');
-  const valLoss = document.getElementById('val-target-loss');
-  const valWeeks = document.getElementById('val-weeks');
-  const preview = document.getElementById('preview-plan');
-
-  function updatePlanPreview() {
-    valLoss.innerText = inLoss.value;
-    valWeeks.innerText = inWeeks.value;
-    const kg = Number(inLoss.value);
-    const w = Number(inWeeks.value);
-    const weeklyRate = (kg / w).toFixed(2);
-    const dailyDeficit = Math.round((kg * 7700) / (w * 7));
-
-    let safety = "🟢 Ritmo sostenible y óptimo";
-    if (weeklyRate > 1.0) safety = "🔴 Déficit muy agresivo";
-    else if (weeklyRate > 0.7) safety = "🟡 Ritmo rápido";
-
-    preview.innerHTML = `
-      <strong>Meta:</strong> Bajar ${kg} kg en ${w} semanas (${weeklyRate} kg/semana).<br>
-      <strong>Déficit calórico diario:</strong> -${dailyDeficit} kcal/día.<br>
-      <small>${safety}</small>
-    `;
-  }
-
-  inLoss.addEventListener('input', updatePlanPreview);
-  inWeeks.addEventListener('input', updatePlanPreview);
-
-  btnOpen.addEventListener('click', () => {
-    document.getElementById('prof-name').value = userProfile.name;
-    document.getElementById('prof-age').value = userProfile.age;
-    document.getElementById('prof-height').value = userProfile.height;
-    document.getElementById('prof-weight').value = userProfile.weight;
-    inLoss.value = userProfile.targetLossKg;
-    inWeeks.value = userProfile.weeks;
-    updatePlanPreview();
-    modal.classList.add('open');
-  });
-
-  btnClose.addEventListener('click', () => modal.classList.remove('open'));
-
-  form.addEventListener('submit', (e) => {
-    e.preventDefault();
-    userProfile = {
-      ...userProfile,
-      name: document.getElementById('prof-name').value,
-      age: Number(document.getElementById('prof-age').value),
-      height: Number(document.getElementById('prof-height').value),
-      weight: Number(document.getElementById('prof-weight').value),
-      targetLossKg: Number(inLoss.value),
-      weeks: Number(inWeeks.value)
-    };
-    localStorage.setItem('userProfile', JSON.stringify(userProfile));
-    modal.classList.remove('open');
-    document.getElementById('user-greeting').innerHTML = `${userProfile.name} <span>Trainer</span>`;
-    document.getElementById('user-goal-subtitle').innerText = `Meta: Bajar ${userProfile.targetLossKg} kg en ${userProfile.weeks} semanas`;
-    renderCoachEngine();
   });
 }
 
@@ -540,7 +596,7 @@ function initApp() {
         headers,
         body: JSON.stringify({ type: 'urgencia', note: 'Brote registrado desde app' })
       });
-      alert('¡Urgencia registrada! Inhala en 4s y bebe agua.');
+      alert('¡Urgencia registrada! Respira 4 segundos y bebe un vaso de agua.');
       loadData();
     });
   }
@@ -612,8 +668,10 @@ function initApp() {
     });
   }
 
-  document.getElementById('user-greeting').innerHTML = `${userProfile.name} <span>Trainer</span>`;
-  document.getElementById('user-goal-subtitle').innerText = `Meta: Bajar ${userProfile.targetLossKg} kg en ${userProfile.weeks} semanas`;
+  if (userProfile) {
+    document.getElementById('user-greeting').innerHTML = `${userProfile.name} <span>Trainer</span>`;
+    document.getElementById('user-goal-subtitle').innerText = `Meta: Bajar ${userProfile.targetLossKg} kg en ${userProfile.weeks} semanas`;
+  }
 
   loadData();
   setInterval(loadData, 10000);
