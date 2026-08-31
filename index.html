@@ -3,119 +3,170 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>VapeTracker Pro</title>
-  <link rel="stylesheet" href="style.css?v=10">
+  <title>PersonalTrainer AI | Fitness & Health Hub</title>
+  <link rel="stylesheet" href="style.css?v=40">
   <link rel="manifest" href="manifest.json">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
   <div class="app-container">
     <header>
-      <h1>VapeTracker <span>Pro</span></h1>
-      <p class="subtitle">Monitor Biométrico y Deshabituación</p>
+      <div class="header-top">
+        <h1 id="user-greeting">Personal<span>Trainer</span></h1>
+        <button id="btn-open-profile" class="btn-icon" title="Ajustar Perfil">⚙️</button>
+      </div>
+      <p class="subtitle" id="user-goal-subtitle">Plan de Alto Rendimiento y Cambio Físico</p>
     </header>
 
-    <!-- Pestañas de navegación -->
+    <!-- Barra de Navegación Principal -->
     <nav class="nav-tabs">
-      <button class="tab-btn active" data-tab="tab-dashboard">🏠 Inicio</button>
-      <button class="tab-btn" data-tab="tab-health">❤️ Salud & Pulso</button>
-      <button class="tab-btn" data-tab="tab-history">📋 Historial</button>
+      <button class="tab-btn active" data-tab="tab-dashboard">🏋️‍♂️ Mi Plan</button>
+      <button class="tab-btn" data-tab="tab-fitness">⚽ Entrenos</button>
+      <button class="tab-btn" data-tab="tab-health">❤️ Salud</button>
+      <button class="tab-btn" data-tab="tab-habits">🚭 Hábitos</button>
       <button class="tab-btn" data-tab="tab-log">➕ Registrar</button>
     </nav>
 
-    <!-- PESTAÑA 1: INICIO -->
+    <!-- PESTAÑA 1: MI PLAN & COACH INTELIGENTE -->
     <main id="tab-dashboard" class="tab-content active">
-      <section class="card timer-card">
-        <h2>Tiempo sin vapear</h2>
-        <div id="clean-timer" class="timer-display">0d 00h 00m 00s</div>
-        <button id="btn-reset-timer" class="btn-secondary">Registrar Recaída</button>
-      </section>
-
-      <section class="card urgency-card">
-        <button id="btn-craving" class="btn-craving">⚡ ¡Tengo ganas de vapear!</button>
-        <small>Registra el brote. Respira hondo 4 segundos y bebe agua.</small>
+      <section class="card coach-card">
+        <h2>🧠 Coach Nutricional & Metabólico</h2>
+        <div id="coach-advice-container">
+          <p class="insight-text">Cargando análisis de actividad...</p>
+        </div>
+        <div class="calories-target-box">
+          <span class="cal-title">Presupuesto Calórico Recomendado Hoy</span>
+          <span id="daily-target-calories" class="cal-number">-- kcal</span>
+          <small id="cal-breakdown-text">Mantenimiento + Gasto Apple Watch - Déficit Objetivo</small>
+        </div>
       </section>
 
       <section class="card summary-card">
-        <h2>Resumen Rápido</h2>
+        <h2>Resumen de Actividad de Hoy</h2>
         <div class="metrics-grid">
           <div class="metric-box">
-            <span class="metric-title">Último Reposo</span>
-            <span id="metric-last-bpm" class="metric-value">-- bpm</span>
+            <span class="metric-title">Pasos</span>
+            <span id="metric-today-steps" class="metric-value">0</span>
           </div>
           <div class="metric-box">
-            <span class="metric-title">Urgencias</span>
+            <span class="metric-title">Gasto Entrenos</span>
+            <span id="metric-today-burn" class="metric-value">0 kcal</span>
+          </div>
+          <div class="metric-box">
+            <span class="metric-title">Pulso en Reposo</span>
+            <span id="metric-resting-bpm" class="metric-value">-- bpm</span>
+          </div>
+          <div class="metric-box">
+            <span class="metric-title">Días sin Vapear</span>
+            <span id="metric-clean-days" class="metric-value">0 d</span>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- PESTAÑA 2: ENTRENOS Y RENDIMIENTO FÍSICO -->
+    <main id="tab-fitness" class="tab-content">
+      <section class="card chart-card">
+        <h2>Pasos Semanales (Apple Watch)</h2>
+        <canvas id="stepsChart"></canvas>
+      </section>
+
+      <section class="card workouts-card">
+        <h2>⚽ Sesiones de Deporte & Entrenos</h2>
+        <div id="workouts-list" class="readings-container">
+          <p class="empty-msg">No hay sesiones de entreno registradas todavía.</p>
+        </div>
+      </section>
+
+      <section class="card tip-card">
+        <h2>💡 Eficiencia Cardiorrespiratoria</h2>
+        <p class="tip-text">Al jugar fútbol o realizar deporte de alta intensidad, tus músculos aumentan la sensibilidad a la insulina y aceleran la quema de grasa durante todo el día posterior.</p>
+      </section>
+    </main>
+
+    <!-- PESTAÑA 3: SALUD & PULSO -->
+    <main id="tab-health" class="tab-content">
+      <section class="card diagnosis-card">
+        <h2>🩺 Monitor Cardiovascular</h2>
+        <div id="bpm-diagnostic-container" class="diagnostic-box">
+          <p>Analizando registros de reposo del reloj...</p>
+        </div>
+      </section>
+
+      <section class="card chart-card">
+        <h2>Evolución Frecuencia en Reposo (BPM)</h2>
+        <canvas id="bpmHealthChart"></canvas>
+      </section>
+
+      <section class="card reference-card">
+        <h2>Rangos de Referencia</h2>
+        <ul class="ref-list">
+          <li>🟢 <strong>60 - 75 bpm:</strong> Zona óptima / corazón eficiente.</li>
+          <li>🟡 <strong>76 - 90 bpm:</strong> Estimulado por esfuerzo, estrés o fatiga.</li>
+          <li>🔴 <strong>> 90 bpm:</strong> Frecuencia basal elevada en reposo.</li>
+        </ul>
+      </section>
+    </main>
+
+    <!-- PESTAÑA 4: HÁBITOS & VAPEO -->
+    <main id="tab-habits" class="tab-content">
+      <section class="card timer-card">
+        <h2>Tiempo Libre de Vapeo</h2>
+        <div id="clean-timer" class="timer-display">0d 00h 00m 00s</div>
+        <div class="timer-actions">
+          <button id="btn-craving" class="btn-craving-sm">⚡ ¡Tengo Urgencia!</button>
+          <button id="btn-reset-timer" class="btn-secondary-sm">Registrar Recaída</button>
+        </div>
+      </section>
+
+      <section class="card summary-card">
+        <h2>Beneficios Acumulados</h2>
+        <div class="metrics-grid">
+          <div class="metric-box">
+            <span class="metric-title">Dinero Ahorrado</span>
+            <span id="metric-money-saved" class="metric-value">0.00 €</span>
+          </div>
+          <div class="metric-box">
+            <span class="metric-title">Brotes Superados</span>
             <span id="metric-cravings-count" class="metric-value">0</span>
           </div>
         </div>
       </section>
     </main>
 
-    <!-- PESTAÑA 2: SALUD & PULSO -->
-    <main id="tab-health" class="tab-content">
-      <section class="card diagnosis-card">
-        <h2>🩺 Diagnóstico Cardíaco</h2>
-        <div id="bpm-diagnostic" class="diagnostic-box">
-          <p>Cargando lecturas del Apple Watch...</p>
-        </div>
-      </section>
-
-      <section class="card summary-card">
-        <h2>Últimas Lecturas de Reposo</h2>
-        <div id="health-readings-list" class="readings-container">
-          <p class="empty-msg">Sin datos recientes.</p>
-        </div>
-      </section>
-
-      <section class="card reference-card">
-        <h2>Rangos de Referencia Médica</h2>
-        <ul class="ref-list">
-          <li>🟢 <strong>60 - 75 bpm:</strong> Rango óptimo en reposo.</li>
-          <li>🟡 <strong>76 - 90 bpm:</strong> Rango moderado / estimulado por nicotina o estrés.</li>
-          <li>🔴 <strong>> 90 bpm:</strong> Ritmo basal acelerado en reposo.</li>
-        </ul>
-      </section>
-    </main>
-
-    <!-- PESTAÑA 3: HISTORIAL -->
-    <main id="tab-history" class="tab-content">
-      <section class="card history-card">
-        <h2>📋 Todos los Registros</h2>
-        <div class="filter-group">
-          <button class="filter-btn active" data-filter="all">Todos</button>
-          <button class="filter-btn" data-filter="urgencia">Urgencias</button>
-          <button class="filter-btn" data-filter="daily">Apple Watch</button>
-        </div>
-        <ul id="full-history-list" class="history-list"></ul>
-      </section>
-    </main>
-
-    <!-- PESTAÑA 4: REGISTRAR -->
+    <!-- PESTAÑA 5: REGISTRAR MANUAL -->
     <main id="tab-log" class="tab-content">
       <section class="card form-card">
-        <h2>📝 Registrar Chequeo o Sesión</h2>
+        <h2>📝 Nuevo Registro</h2>
         <form id="tracker-form">
           <div class="form-group">
             <label for="log-type">Tipo de registro:</label>
             <select id="log-type">
-              <option value="estado">Chequeo de estado</option>
+              <option value="peso">Peso Corporal (kg)</option>
+              <option value="estado">Chequeo de estado diario</option>
               <option value="vapeo">He vapeado (Sesión)</option>
             </select>
           </div>
 
-          <div class="form-group">
+          <div id="form-weight-group" class="form-group">
+            <label for="input-weight">Peso actual (kg):</label>
+            <input type="number" step="0.1" id="input-weight" placeholder="Ej: 78.5">
+          </div>
+
+          <div id="form-bpm-group" class="form-group" style="display: none;">
             <label for="bpm">Pulsaciones actuales (BPM):</label>
-            <input type="number" id="bpm" placeholder="Ej: 80">
+            <input type="number" id="bpm" placeholder="Ej: 75">
           </div>
 
           <div id="vape-extra-fields" style="display: none;">
             <div class="form-group">
-              <label for="bpm-after">Pulsaciones después de vapear:</label>
-              <input type="number" id="bpm-after" placeholder="Ej: 95">
+              <label for="bpm-after">Pulsaciones tras vapear:</label>
+              <input type="number" id="bpm-after" placeholder="Ej: 90">
             </div>
             <div class="form-group">
-              <label for="trigger">Detonante / Causa:</label>
+              <label for="trigger">Detonante:</label>
               <select id="trigger">
                 <option value="Estrés">Estrés / Ansiedad</option>
                 <option value="Aburrimiento">Aburrimiento</option>
@@ -126,21 +177,67 @@
           </div>
 
           <div class="form-group">
-            <label for="mood">Ánimo / Calma (1 al 10): <span id="mood-val">5</span></label>
+            <label for="mood">Nivel de Energía / Ánimo (1 al 10): <span id="mood-val">5</span></label>
             <input type="range" id="mood" min="1" max="10" value="5">
           </div>
 
           <div class="form-group">
-            <label for="notes">Notas de contexto:</label>
-            <input type="text" id="notes" placeholder="Ej: Estudiando, tras comer...">
+            <label for="notes">Notas adicionales:</label>
+            <input type="text" id="notes" placeholder="Ej: Buenas sensaciones en el entreno...">
           </div>
 
-          <button type="submit" class="btn-primary">Guardar Registro</button>
+          <button type="submit" class="btn-primary">Guardar Datos</button>
         </form>
       </section>
     </main>
   </div>
 
-  <script src="app.js?v=10"></script>
+  <!-- MODAL DE AJUSTES DE PERFIL Y PLAN -->
+  <div id="profile-modal" class="modal-overlay">
+    <div class="modal-card">
+      <h2>⚙️ Configura tu Perfil Físico</h2>
+      <p class="modal-sub">Calcula tu tasa metabólica y fija tus objetivos.</p>
+      
+      <form id="profile-form">
+        <div class="form-group">
+          <label for="prof-name">Nombre:</label>
+          <input type="text" id="prof-name" required placeholder="Tu nombre">
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="prof-age">Edad:</label>
+            <input type="number" id="prof-age" required placeholder="Ej: 24">
+          </div>
+          <div class="form-group">
+            <label for="prof-height">Altura (cm):</label>
+            <input type="number" id="prof-height" required placeholder="Ej: 178">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="prof-weight">Peso Actual (kg):</label>
+          <input type="number" step="0.1" id="prof-weight" required placeholder="Ej: 80.0">
+        </div>
+
+        <div class="goal-slider-box">
+          <label for="prof-target-loss">Kilos a perder: <strong id="val-target-loss">4</strong> kg</label>
+          <input type="range" id="prof-target-loss" min="1" max="25" value="4">
+
+          <label for="prof-weeks" style="margin-top: 10px;">En cuántas semanas: <strong id="val-weeks">8</strong> semanas</label>
+          <input type="range" id="prof-weeks" min="2" max="24" value="8">
+
+          <div class="calculated-plan" id="preview-plan"></div>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" id="btn-close-modal" class="btn-secondary">Cerrar</button>
+          <button type="submit" class="btn-primary">Guardar Plan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="app.js?v=40"></script>
 </body>
 </html>
