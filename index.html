@@ -3,58 +3,143 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta name="theme-color" content="#121212">
-  <title>VapeTracker</title>
-  <link rel="manifest" href="manifest.json">
+  <title>VapeTracker Pro</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="manifest" href="manifest.json">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <!-- Chart.js para las gráficas -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
   <div class="app-container">
     <header>
-      <h1>VapeTracker</h1>
-      <p class="subtitle">Control y Bienestar</p>
+      <h1>VapeTracker <span>Pro</span></h1>
+      <p class="subtitle">Monitor Biométrico y Deshabituación</p>
     </header>
 
-    <!-- Contador de tiempo limpio -->
-    <section class="card counter-card">
-      <h2>Tiempo sin vapear</h2>
-      <div id="clean-timer" class="timer-display">0d 00h 00m 00s</div>
-      <button id="btn-reset-timer" class="btn-secondary">Reiniciar contador (Recaída)</button>
-    </section>
+    <!-- Barra de Navegación -->
+    <nav class="nav-tabs">
+      <button class="tab-btn active" data-tab="tab-dashboard">🏠 Inicio</button>
+      <button class="tab-btn" data-tab="tab-health">❤️ Salud & Pulso</button>
+      <button class="tab-btn" data-tab="tab-history">📋 Historial</button>
+      <button class="tab-btn" data-tab="tab-log">➕ Registrar</button>
+    </nav>
 
-    <!-- Registro rápido de Urgencia/Ganas -->
-    <section class="card action-card">
-      <button id="btn-craving" class="btn-main">¡Tengo ganas de vapear!</button>
-      <p class="hint">Respira hondo 4 segundos antes de pulsar</p>
-    </section>
+    <!-- PESTAÑA 1: INICIO / DASHBOARD -->
+    <main id="tab-dashboard" class="tab-content active">
+      <section class="card timer-card">
+        <h2>Tiempo sin vapear</h2>
+        <div id="clean-timer" class="timer-display">0d 00h 00m 00s</div>
+        <button id="btn-reset-timer" class="btn-secondary">Registrar Recaída</button>
+      </section>
 
-    <!-- Registro diario de estado de ánimo y pulsaciones -->
-    <section class="card form-card">
-      <h3>Registro rápido</h3>
-      <form id="tracker-form">
-        <label for="mood">Estado de ánimo / Energía (1 al 10):</label>
-        <div class="range-group">
-          <input type="range" id="mood" min="1" max="10" value="5">
-          <span id="mood-value">5</span>
+      <section class="card urgency-card">
+        <button id="btn-craving" class="btn-craving">⚡ ¡Tengo ganas de vapear!</button>
+        <small>Registra el brote. Recuerda inhalar 4 segundos y beber agua.</small>
+      </section>
+
+      <section class="card summary-card">
+        <h2>Resumen Rápido</h2>
+        <div class="metrics-grid">
+          <div class="metric-box">
+            <span class="metric-title">Último Pulso Reposo</span>
+            <span id="metric-last-bpm" class="metric-value">-- bpm</span>
+          </div>
+          <div class="metric-box">
+            <span class="metric-title">Urgencias Superadas</span>
+            <span id="metric-cravings-count" class="metric-value">0</span>
+          </div>
         </div>
+      </section>
+    </main>
 
-        <label for="heart-rate">Pulsaciones en reposo (opcional):</label>
-        <input type="number" id="heart-rate" placeholder="Ej: 75 bpm">
+    <!-- PESTAÑA 2: SALUD Y FRECUENCIA CARDÍACA -->
+    <main id="tab-health" class="tab-content">
+      <section class="card diagnosis-card">
+        <h2>🩺 Análisis y Diagnóstico Cardíaco</h2>
+        <div id="bpm-diagnostic" class="diagnostic-box">
+          <p class="insight-text">Analizando registros de Apple Salud...</p>
+        </div>
+      </section>
 
-        <label for="notes">Notas o contexto:</label>
-        <input type="text" id="notes" placeholder="Ej: Estudiando, después de comer...">
+      <section class="card chart-card">
+        <h2>Evolución Pulso en Reposo (BPM)</h2>
+        <canvas id="bpmChart"></canvas>
+      </section>
 
-        <button type="submit" class="btn-save">Guardar registro</button>
-      </form>
-    </section>
+      <section class="card reference-card">
+        <h2>Rangos de Referencia Médica</h2>
+        <ul class="ref-list">
+          <li>🟢 <strong>60 - 75 bpm:</strong> Rango óptimo en reposo.</li>
+          <li>🟡 <strong>76 - 90 bpm:</strong> Rango normal-elevado (común en consumo regular de nicotina).</li>
+          <li>🔴 <strong>> 90 bpm:</strong> Frecuencia basal elevada / Taquicardia leve en reposo.</li>
+        </ul>
+      </section>
+    </main>
 
-    <!-- Historial de registros -->
-    <section class="card history-card">
-      <h3>Historial reciente</h3>
-      <ul id="history-list"></ul>
-    </section>
+    <!-- PESTAÑA 3: HISTORIAL COMPLETO -->
+    <main id="tab-history" class="tab-content">
+      <section class="card history-card">
+        <h2>📋 Todos los Registros</h2>
+        <div class="filter-group">
+          <button class="filter-btn active" data-filter="all">Todos</button>
+          <button class="filter-btn" data-filter="urgencia">Urgencias</button>
+          <button class="filter-btn" data-filter="daily">Apple Salud</button>
+        </div>
+        <ul id="full-history-list" class="history-list"></ul>
+      </section>
+    </main>
+
+    <!-- PESTAÑA 4: REGISTRO MANUAL -->
+    <main id="tab-log" class="tab-content">
+      <section class="card form-card">
+        <h2>📝 Registrar Sesión o Estado</h2>
+        <form id="tracker-form">
+          <label for="log-type">Tipo de registro:</label>
+          <select id="log-type">
+            <option value="estado">Chequeo de estado</option>
+            <option value="vapeo">He vapeado (Sesión)</option>
+          </select>
+
+          <div class="form-group">
+            <label for="bpm">Pulsaciones actuales (BPM):</label>
+            <input type="number" id="bpm" placeholder="Ej: 80">
+          </div>
+
+          <div id="vape-extra-fields" style="display: none;">
+            <div class="form-group">
+              <label for="bpm-after">Pulsaciones después de vapear:</label>
+              <input type="number" id="bpm-after" placeholder="Ej: 95">
+            </div>
+            <div class="form-group">
+              <label for="trigger">Motivo / Detonante:</label>
+              <select id="trigger">
+                <option value="Estrés">Estrés / Ansiedad</option>
+                <option value="Aburrimiento">Aburrimiento</option>
+                <option value="Social">Social</option>
+                <option value="Hábito">Hábito</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="mood">Nivel de Ánimo / Calma (1 al 10): <span id="mood-val">5</span></label>
+            <input type="range" id="mood" min="1" max="10" value="5">
+          </div>
+
+          <div class="form-group">
+            <label for="notes">Notas adicionales:</label>
+            <input type="text" id="notes" placeholder="Ej: Estudiando...">
+          </div>
+
+          <button type="submit" class="btn-primary">Guardar Registro</button>
+        </form>
+      </section>
+    </main>
   </div>
 
-  <script src="app.js?v=2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="app.js?v=5"></script>
 </body>
 </html>
