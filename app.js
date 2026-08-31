@@ -1254,27 +1254,26 @@ updateTimerAndSavings();
 async function loadData() {
   try {
     const [resLogs, resHealth, resWorkouts] = await Promise.all([
-      fetch(`${SUPABASE_URL}/rest/v1/vape_logs?select=*&order=created_at.desc`, { headers: getAuthHeaders() }),
-      fetch(`${SUPABASE_URL}/rest/v1/daily_health?select=*&order=created_at.asc`, { headers: getAuthHeaders() }),
-      fetch(`${SUPABASE_URL}/rest/v1/workouts?select=*&order=created_at.desc`, { headers: getAuthHeaders() })
+      fetch(`${SUPABASE_URL}/rest/v1/vape_logs?select=*&order=created_at.desc`, { headers }),
+      fetch(`${SUPABASE_URL}/rest/v1/daily_health?select=*&order=created_at.asc`, { headers }),
+      fetch(`${SUPABASE_URL}/rest/v1/workouts?select=*&order=created_at.desc`, { headers })
     ]);
 
-    allLogs = await resLogs.json();
-    allHealth = await resHealth.json();
-    allWorkouts = await resWorkouts.json();
+    const dataLogs = await resLogs.json();
+    const dataHealth = await resHealth.json();
+    const dataWorkouts = await resWorkouts.json();
 
-    const lastRelapse = Array.isArray(allLogs) ? allLogs.find(l => l.type === 'recaida') : null;
-    if (lastRelapse) cleanSince = new Date(lastRelapse.created_at).getTime();
+    // Protección para asegurar que si Supabase falla o devuelve algo extraño, no pete la gráfica
+    allLogs = Array.isArray(dataLogs) ? dataLogs : [];
+    allHealth = Array.isArray(dataHealth) ? dataHealth : [];
+    allWorkouts = Array.isArray(dataWorkouts) ? dataWorkouts : [];
 
-    updateDashboardMetrics();
-    renderCoachEngine();
-    renderStepsChart();
-    renderBpmChart();
-    renderWorkoutsList();
-    renderDiagnostic();
-    renderHeartZones();
-    renderDietMeals();
-    loadUserRecipes();
+    if (typeof updateDashboardMetrics === 'function') updateDashboardMetrics();
+    if (typeof renderCoachEngine === 'function') renderCoachEngine();
+    if (typeof renderStepsChart === 'function') renderStepsChart();
+    if (typeof renderBpmChart === 'function') renderBpmChart();
+    if (typeof renderWorkoutsList === 'function') renderWorkoutsList();
+    if (typeof renderDiagnostic === 'function') renderDiagnostic();
   } catch (err) {
     console.error("Error cargando datos:", err);
   }
