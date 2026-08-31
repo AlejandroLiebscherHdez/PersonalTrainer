@@ -879,24 +879,40 @@ window.addNewExerciseToDay = function(dayIdx) {
 };
 
 // Gráfica de Volumen Semanal (Tonelaje Levantado)
+// Gráfica Dinámica de Rendimiento en Entrenamientos (Reactiva al selector)
 function renderVolumeChart() {
   const canvas = document.getElementById('volumeChart');
   if (!canvas || typeof Chart === 'undefined' || !customRoutines) return;
 
   const ctx = canvas.getContext('2d');
   const labels = customRoutines.map(r => r.day);
-  const volumeData = customRoutines.map(r => {
-    let dayTonnage = 0;
-    r.exercises.forEach(ex => {
-      const kg = Number(ex[2] || 0);
-      const setsStr = String(ex[1]);
-      const setsMatch = setsStr.match(/(\d+)\s*x\s*(\d+)/i);
-      if (setsMatch && kg > 0) {
-        dayTonnage += (Number(setsMatch[1]) * Number(setsMatch[2])) * kg;
-      }
+
+  let chartData = [];
+  let datasetLabel = 'Kg Levantados';
+  let chartColor = '#10b981';
+
+  if (selectedWorkoutMetric === 'kcal') {
+    datasetLabel = 'Kcal Quemadas';
+    chartColor = '#f59e0b';
+    chartData = customRoutines.map((r, dIdx) => {
+      const session = completedWorkouts[dIdx];
+      return session ? (session.kcal || 0) : 0;
     });
-    return dayTonnage;
-  });
+  } else if (selectedWorkoutMetric === 'reps') {
+    datasetLabel = 'Repeticiones Totales';
+    chartColor = '#38bdf8';
+    chartData = customRoutines.map((r, dIdx) => {
+      const session = completedWorkouts[dIdx];
+      return session ? (session.reps || 0) : 0;
+    });
+  } else {
+    datasetLabel = 'Kg Levantados (Tonelaje)';
+    chartColor = '#10b981';
+    chartData = customRoutines.map((r, dIdx) => {
+      const session = completedWorkouts[dIdx];
+      return session ? (session.tonnage || 0) : 0;
+    });
+  }
 
   if (volumeChartInstance) volumeChartInstance.destroy();
 
@@ -905,19 +921,31 @@ function renderVolumeChart() {
     data: {
       labels: labels,
       datasets: [{
-        label: 'Kg Levantados',
-        data: volumeData,
-        backgroundColor: '#10b981',
+        label: datasetLabel,
+        data: chartData,
+        backgroundColor: chartColor,
         borderRadius: 8
       }]
     },
     options: {
       responsive: true,
       scales: {
-        y: { grid: { color: '#1f2a44' }, ticks: { color: '#94a3b8' } },
-        x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
+        y: { 
+          beginAtZero: true,
+          grid: { color: '#1f2a44' }, 
+          ticks: { color: '#94a3b8' } 
+        },
+        x: { 
+          grid: { display: false }, 
+          ticks: { color: '#94a3b8' } 
+        }
       },
-      plugins: { legend: { display: false } }
+      plugins: {
+        legend: {
+          display: true,
+          labels: { color: '#94a3b8', boxWidth: 12 }
+        }
+      }
     }
   });
 }
