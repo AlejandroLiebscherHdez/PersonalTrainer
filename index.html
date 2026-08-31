@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>PersonalTrainer AI | Fitness, Health & Habits</title>
-  <link rel="stylesheet" href="style.css?v=70">
+  <link rel="stylesheet" href="style.css?v=80">
   <link rel="manifest" href="manifest.json">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -64,7 +64,7 @@
           </label>
           <label class="check-item">
             <input type="checkbox" id="chk-workout">
-            <span>🔥 Sesión de entrenamiento o partido completado</span>
+            <span>🔥 Sesión de entrenamiento o deporte completado</span>
           </label>
           <label class="check-item">
             <input type="checkbox" id="chk-clean">
@@ -100,49 +100,57 @@
       </section>
     </main>
 
-    <!-- PESTAÑA 2: ENTRENOS Y RUTINAS -->
+    <!-- PESTAÑA 2: ENTRENOS, RUTINAS Y BUSCADOR -->
     <main id="tab-fitness" class="tab-content">
-      <!-- Selector de Rutinas con múltiples enfoques -->
+      <!-- Buscador de Deportes y Ejercicios -->
+      <section class="card search-card">
+        <h2>🔍 Explorador de Actividades & Ejercicios</h2>
+        <div class="search-box-group">
+          <input type="text" id="activity-search-input" class="search-input" placeholder="Buscar: Pádel, Fútbol, Sentadilla, Press...">
+          <div id="search-results" class="search-results-box"></div>
+        </div>
+      </section>
+
+      <!-- Selector de Rutinas -->
       <section class="card routine-config-card">
         <h2>📋 Creador de Rutina Semanal</h2>
-        
         <div class="form-group">
-          <label for="workout-focus">Enfoque o División Muscular:</label>
+          <label for="workout-focus">Enfoque Principal:</label>
           <select id="workout-focus">
-            <option value="fullbody">🏋️‍♂️ Full Body (Cuerpo Completo - Alta Frecuencia)</option>
-            <option value="ppl">🔥 Push / Pull / Legs (Empuje, Tirón, Pierna)</option>
+            <option value="fullbody">🏋️‍♂️ Full Body (Cuerpo Completo)</option>
+            <option value="ppl">🔥 Push / Pull / Legs</option>
             <option value="torso_pierna">⚡ Torso / Pierna Clásico</option>
-            <option value="chest_arms">💪 Pecho, Hombro & Brazos (Tren Superior)</option>
-            <option value="back_shoulders">🦅 Espalda, Hombro & Core (Amplitud en V)</option>
+            <option value="chest_arms">💪 Pecho, Hombro & Brazos</option>
+            <option value="back_shoulders">🦅 Espalda, Hombro & Core</option>
             <option value="legs_glutes">🦵 Piernas, Glúteos & Isquios</option>
           </select>
         </div>
 
         <div class="form-row">
           <div class="form-group">
-            <label for="workout-days-week">Frecuencia:</label>
+            <label for="workout-days-week">Días / Semana:</label>
             <select id="workout-days-week">
-              <option value="3">3 días / sem</option>
-              <option value="4" selected>4 días / sem</option>
-              <option value="5">5 días / sem</option>
-              <option value="6">6 días / sem</option>
+              <option value="3">3 días</option>
+              <option value="4" selected>4 días</option>
+              <option value="5">5 días</option>
+              <option value="6">6 días</option>
             </select>
           </div>
           <div class="form-group">
-            <label for="workout-location">Lugar / Equipo:</label>
+            <label for="workout-location">Lugar:</label>
             <select id="workout-location">
               <option value="gym" selected>Gimnasio</option>
-              <option value="home">Mancuernas / Casa</option>
+              <option value="home">Casa / Mancuernas</option>
             </select>
           </div>
         </div>
 
-        <button id="btn-generate-routine" class="btn-primary" style="margin-top: 6px;">Generar Plan de Rutina</button>
+        <button id="btn-generate-routine" class="btn-primary" style="margin-top: 4px;">Actualizar Rutina Semanal</button>
       </section>
 
-      <!-- Rutina Desglosada -->
+      <!-- Distribución Editable -->
       <section class="card routine-display-card">
-        <h2 id="routine-title">📅 Tu Distribución Semanal</h2>
+        <h2 id="routine-title">📅 Tu Plan Semanal (Toca las series para editar)</h2>
         <div id="weekly-routine-container" class="routine-accordion"></div>
       </section>
 
@@ -152,7 +160,7 @@
       </section>
 
       <section class="card workouts-card">
-        <h2>⚽ Sesiones & Partidos Registrados</h2>
+        <h2>⚽ Sesiones y Deportes Registrados</h2>
         <div id="workouts-list" class="readings-container">
           <p class="empty-msg">No hay sesiones de entreno registradas todavía.</p>
         </div>
@@ -173,21 +181,26 @@
         <canvas id="bpmHealthChart"></canvas>
       </section>
 
-      <!-- Zonas Cardíacas de Entrenamiento -->
+      <!-- Relajación y Movilidad Cervical Guiada -->
+      <section class="card interactive-card">
+        <h2>💆‍♂️ Descompresión & Movilidad Guiada</h2>
+        <div class="form-group">
+          <label for="relax-routine-type">Elige protocolo de relajación:</label>
+          <select id="relax-routine-type">
+            <option value="breath">Respiración Vagal 4-7-8 (Bajar pulso)</option>
+            <option value="neck">Movilidad Cervical & Trapecio (Alivio estrés)</option>
+          </select>
+        </div>
+        <button id="btn-start-relax" class="btn-primary">Comenzar Sesión Guiada (1 min)</button>
+        <div id="relax-guide-box" style="display: none; text-align: center; margin-top: 14px;">
+          <h3 id="relax-status" style="font-size: 1.2rem; color: var(--accent-blue);">Preparado...</h3>
+          <span id="relax-timer" style="font-size: 2.2rem; font-weight: 800; color: var(--text-main);">10</span>
+        </div>
+      </section>
+
       <section class="card zone-card">
         <h2>🎯 Zonas de Frecuencia Cardíaca</h2>
         <div class="zones-container" id="heart-zones-box"></div>
-      </section>
-
-      <!-- Protocolo Interactivo 4-7-8 -->
-      <section class="card interactive-card">
-        <h2>🧘 Descompresión del Sistema Nervioso</h2>
-        <p class="tip-text" style="margin-bottom: 10px;">Estimula el nervio vago para inducir reposo cardíaco.</p>
-        <button id="btn-start-breath" class="btn-primary">Iniciar Respiración Guiada (1 min)</button>
-        <div id="breath-guide-box" style="display: none; text-align: center; margin-top: 12px;">
-          <h3 id="breath-status" style="font-size: 1.3rem; color: var(--accent-blue);">Inhala...</h3>
-          <span id="breath-timer" style="font-size: 2rem; font-weight: 800;">4</span>
-        </div>
       </section>
     </main>
 
@@ -202,26 +215,33 @@
         </div>
       </section>
 
-      <!-- Métricas Fisiológicas de Recuperación -->
+      <!-- Progresión Fisiológica Temporal Real -->
       <section class="card recovery-card">
-        <h2>🫁 Recuperación Pulmonar Estimada</h2>
+        <h2>🫁 Recuperación Fisiológica Temporal</h2>
         <div class="recovery-item">
           <div class="recovery-header">
-            <span>Oxigenación en Sangre & Monóxido Eliminado</span>
-            <strong id="prog-ox-val">100%</strong>
+            <span>Oxigenación en Sangre & Monóxido (24h)</span>
+            <strong id="prog-ox-val">0%</strong>
           </div>
-          <div class="progress-bar-bg"><div id="prog-ox-bar" class="progress-bar-fill" style="width: 100%;"></div></div>
+          <div class="progress-bar-bg"><div id="prog-ox-bar" class="progress-bar-fill" style="width: 0%;"></div></div>
         </div>
         <div class="recovery-item" style="margin-top: 10px;">
           <div class="recovery-header">
-            <span>Sensibilidad Receptores de Dopamina</span>
-            <strong id="prog-dop-val">80%</strong>
+            <span>Regeneración Cilios Pulmonares (30 días)</span>
+            <strong id="prog-cilia-val">0%</strong>
           </div>
-          <div class="progress-bar-bg"><div id="prog-dop-bar" class="progress-bar-fill fill-green" style="width: 80%;"></div></div>
+          <div class="progress-bar-bg"><div id="prog-cilia-bar" class="progress-bar-fill fill-green" style="width: 0%;"></div></div>
+        </div>
+        <div class="recovery-item" style="margin-top: 10px;">
+          <div class="recovery-header">
+            <span>Receptores Dopaminérgicos & Tono Vagal (90 días)</span>
+            <strong id="prog-dop-val">0%</strong>
+          </div>
+          <div class="progress-bar-bg"><div id="prog-dop-bar" class="progress-bar-fill" style="width: 0%; background: #f59e0b;"></div></div>
         </div>
       </section>
 
-      <!-- Configuración del Tipo de Consumo y Ahorro -->
+      <!-- Configuración del Ahorro -->
       <section class="card habit-config-card">
         <h2>💰 Configuración de Ahorro</h2>
         <div class="form-group">
@@ -257,7 +277,7 @@
     <!-- PESTAÑA 5: REGISTRAR MANUAL -->
     <main id="tab-log" class="tab-content">
       <section class="card form-card">
-        <h2>📝 Nuevo Registro Manual</h2>
+        <h2>📝 Registro Manual</h2>
         <form id="tracker-form">
           <div class="form-group">
             <label for="log-type">Tipo de entrada:</label>
@@ -301,7 +321,7 @@
 
           <div class="form-group">
             <label for="notes">Notas adicionales:</label>
-            <input type="text" id="notes" placeholder="Ej: Buenas sensaciones, comida balanceada...">
+            <input type="text" id="notes" placeholder="Ej: Comida, partido de pádel, sensaciones...">
           </div>
 
           <button type="submit" class="btn-primary">Guardar Datos</button>
@@ -310,11 +330,11 @@
     </main>
   </div>
 
-  <!-- MODAL OBLIGATORIO DE BIENVENIDA / PERFIL -->
+  <!-- MODAL DE CONFIGURACIÓN & RECORDATORIO DE PESAJE -->
   <div id="profile-modal" class="modal-overlay">
     <div class="modal-card">
-      <h2>⚙️ Configura tu Perfil Físico</h2>
-      <p class="modal-sub">Personaliza tu objetivo de peso y tasa metabólica.</p>
+      <h2>⚙️ Configuración del Perfil & Alertas</h2>
+      <p class="modal-sub">Ajusta tus datos y la frecuencia de pesaje.</p>
       
       <form id="profile-form">
         <div class="form-group">
@@ -334,8 +354,18 @@
         </div>
 
         <div class="form-group">
-          <label for="prof-weight">Peso Actual (kg):</label>
+          <label for="prof-weight">Peso Inicial (kg):</label>
           <input type="number" step="0.1" id="prof-weight" required placeholder="Ej: 80.0">
+        </div>
+
+        <div class="form-group">
+          <label for="prof-weigh-freq">Frecuencia de Recordatorio de Pesaje:</label>
+          <select id="prof-weigh-freq">
+            <option value="daily">Diariamente al abrir la web</option>
+            <option value="3days" selected>Cada 3 días</option>
+            <option value="weekly">Semanalmente (Cada 7 días)</option>
+            <option value="never">Desactivar recordatorio automático</option>
+          </select>
         </div>
 
         <div class="goal-slider-box">
@@ -350,12 +380,12 @@
 
         <div class="modal-actions">
           <button type="button" id="btn-close-modal" class="btn-secondary">Cerrar</button>
-          <button type="submit" class="btn-primary">Guardar y Empezar</button>
+          <button type="submit" class="btn-primary">Guardar Ajustes</button>
         </div>
       </form>
     </div>
   </div>
 
-  <script src="app.js?v=70"></script>
+  <script src="app.js?v=80"></script>
 </body>
 </html>

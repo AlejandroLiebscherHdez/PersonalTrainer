@@ -18,6 +18,22 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+/* Scrollbar estilizada */
+::-webkit-scrollbar {
+  height: 6px;
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-color);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--card-border);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-blue);
+}
+
 body {
   background-color: var(--bg-color);
   color: var(--text-main);
@@ -29,7 +45,7 @@ body {
 
 .app-container {
   width: 100%;
-  max-width: 500px;
+  max-width: 520px;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -71,12 +87,14 @@ h1 span {
   margin-top: 2px;
 }
 
-/* Tabs */
+/* Tabs sin scrollbar blanca */
 .nav-tabs {
   display: flex;
   gap: 6px;
   overflow-x: auto;
-  padding-bottom: 4px;
+  padding-bottom: 6px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--card-border) var(--bg-color);
 }
 
 .tab-btn {
@@ -84,7 +102,7 @@ h1 span {
   background: var(--card-bg);
   border: 1px solid var(--card-border);
   color: var(--text-muted);
-  padding: 10px 6px;
+  padding: 10px 8px;
   border-radius: 12px;
   font-size: 0.78rem;
   font-weight: 700;
@@ -144,7 +162,6 @@ h1 span {
   font-size: 0.75rem;
   color: var(--text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.5px;
 }
 
 .cal-number {
@@ -158,6 +175,31 @@ h1 span {
 .calories-target-box small {
   font-size: 0.76rem;
   color: var(--text-muted);
+}
+
+/* Checklist diario */
+.checklist-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.check-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #0b0f19;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--card-border);
+  font-size: 0.86rem;
+  cursor: pointer;
+}
+
+.check-item input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent-green);
 }
 
 /* Timer Card */
@@ -255,14 +297,122 @@ h1 span {
   font-size: 0.85rem;
 }
 
-.ref-list {
+/* Rutina Interactiva & Ejercicios */
+.routine-accordion {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.routine-day-card {
+  background: #0b0f19;
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  padding: 14px;
+}
+
+.routine-day-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.routine-day-name {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--accent-blue);
+}
+
+.routine-day-focus {
+  font-size: 0.75rem;
+  background: #1f2a44;
+  color: var(--text-muted);
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+.exercise-list {
   list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 0.84rem;
+}
+
+.exercise-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 6px;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.08);
+}
+
+.exercise-sets {
+  color: var(--accent-green);
+  font-weight: 600;
+  background: #131b2e;
+  padding: 2px 6px;
+  border-radius: 6px;
+  border: 1px solid var(--card-border);
+  cursor: pointer;
+}
+
+.btn-add-ex {
+  background: transparent;
+  border: 1px dashed var(--card-border);
+  color: var(--text-muted);
+  width: 100%;
+  padding: 6px;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  margin-top: 8px;
+  cursor: pointer;
+}
+
+/* Buscador de Deportes y Ejercicios */
+.search-box-group {
+  position: relative;
+  margin-bottom: 12px;
+}
+
+.search-input {
+  width: 100%;
+  background: #0b0f19;
+  border: 1px solid var(--card-border);
+  color: var(--text-main);
+  padding: 12px 14px;
+  border-radius: 10px;
+  font-size: 0.9rem;
+}
+
+.search-results-box {
+  position: absolute;
+  top: 105%;
+  left: 0;
+  right: 0;
+  background: #131b2e;
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  max-height: 220px;
+  overflow-y: auto;
+  z-index: 50;
+  display: none;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5);
+}
+
+.search-item {
+  padding: 10px 14px;
+  border-bottom: 1px solid #1f2a44;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   font-size: 0.82rem;
 }
 
-.ref-list li {
-  padding: 8px 0;
-  border-bottom: 1px solid var(--card-border);
+.search-item:hover {
+  background: #1f2a44;
 }
 
 /* Formularios */
@@ -307,9 +457,9 @@ input[type="range"] {
   background: #2563eb;
   color: white;
   border: none;
-  padding: 14px;
+  padding: 13px;
   border-radius: 12px;
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 700;
   cursor: pointer;
 }
@@ -324,7 +474,7 @@ input[type="range"] {
   cursor: pointer;
 }
 
-/* Modal de Perfil */
+/* Modales */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -382,109 +532,6 @@ input[type="range"] {
   margin-top: 14px;
 }
 
-/* Historial */
-.filter-group {
-  display: flex;
-  gap: 6px;
-  margin-bottom: 12px;
-  overflow-x: auto;
-}
-
-.filter-btn {
-  background: #0b0f19;
-  border: 1px solid var(--card-border);
-  color: var(--text-muted);
-  padding: 6px 12px;
-  border-radius: 8px;
-  font-size: 0.76rem;
-  cursor: pointer;
-  white-space: nowrap;
-}
-
-.filter-btn.active {
-  background: #1f2a44;
-  color: var(--text-main);
-  border-color: var(--accent-blue);
-}
-
-.history-list {
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  max-height: 380px;
-  overflow-y: auto;
-}
-
-.history-item {
-  background: #0b0f19;
-  padding: 12px;
-  border-radius: 10px;
-  border: 1px solid var(--card-border);
-  font-size: 0.85rem;
-  line-height: 1.4;
-}
-
-.history-item.craving {
-  border-left: 3px solid var(--accent-red);
-}
-
-/* Acordeón y Días de Rutina */
-.routine-accordion {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.routine-day-card {
-  background: #0b0f19;
-  border: 1px solid var(--card-border);
-  border-radius: 12px;
-  padding: 14px;
-}
-
-.routine-day-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
-}
-
-.routine-day-name {
-  font-size: 0.92rem;
-  font-weight: 700;
-  color: var(--accent-blue);
-}
-
-.routine-day-focus {
-  font-size: 0.75rem;
-  background: #1f2a44;
-  color: var(--text-muted);
-  padding: 2px 8px;
-  border-radius: 6px;
-}
-
-.exercise-list {
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  font-size: 0.82rem;
-}
-
-.exercise-item {
-  display: flex;
-  justify-content: space-between;
-  color: var(--text-main);
-  padding-bottom: 4px;
-  border-bottom: 1px dashed rgba(255, 255, 255, 0.06);
-}
-
-.exercise-sets {
-  color: var(--accent-green);
-  font-weight: 600;
-}
-
 /* Zonas de Pulso */
 .zones-container {
   display: flex;
@@ -501,12 +548,6 @@ input[type="range"] {
   border-radius: 8px;
   font-size: 0.8rem;
   border: 1px solid var(--card-border);
-}
-
-.zone-tag {
-  font-weight: 700;
-  border-radius: 4px;
-  padding: 2px 6px;
 }
 
 /* Barras de Recuperación */

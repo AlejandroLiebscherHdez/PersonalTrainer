@@ -18,6 +18,8 @@ let allWorkouts = [];
 const savedProfileRaw = localStorage.getItem('userProfile');
 let userProfile = savedProfileRaw ? JSON.parse(savedProfileRaw) : null;
 
+let customRoutines = JSON.parse(localStorage.getItem('customUserRoutines')) || null;
+
 let dailyChecklist = JSON.parse(localStorage.getItem('dailyChecklist_' + new Date().toISOString().split('T')[0])) || {
   water: false,
   creatine: false,
@@ -28,39 +30,68 @@ let dailyChecklist = JSON.parse(localStorage.getItem('dailyChecklist_' + new Dat
   sleep: false
 };
 
-// Base de datos de rutinas expandida
-const ROUTINE_DATABASE = {
+// Base de datos de ejercicios para el buscador
+const ACTIVITY_DATABASE = [
+  { name: "Pádel (Partido / Clase)", type: "Deporte", kcal: "~450 kcal/h", bpm: "120-160 bpm" },
+  { name: "Fútbol 7 / Fútbol 11", type: "Deporte", kcal: "~600 kcal/h", bpm: "135-175 bpm" },
+  { name: "Caminata Rápida (LISS)", type: "Cardio", kcal: "~250 kcal/h", bpm: "95-120 bpm" },
+  { name: "Baloncesto", type: "Deporte", kcal: "~550 kcal/h", bpm: "130-170 bpm" },
+  { name: "Natación", type: "Cardio", kcal: "~500 kcal/h", bpm: "125-160 bpm" },
+  { name: "Press de Banca con Barra", type: "Pecho", sets: "4 x 8-10" },
+  { name: "Press Inclinado con Mancuernas", type: "Pecho Superior", sets: "4 x 10-12" },
+  { name: "Aperturas / Cruces en Polea", type: "Pecho", sets: "3 x 12-15" },
+  { name: "Dominadas / Jalón al Pecho", type: "Espalda", sets: "4 x 8-10" },
+  { name: "Remo Unilateral con Mancuerna", type: "Espalda", sets: "4 x 10" },
+  { name: "Remo con Barra T", type: "Espalda Densidad", sets: "4 x 8-10" },
+  { name: "Press Militar con Mancuernas", type: "Hombro", sets: "4 x 8-10" },
+  { name: "Elevaciones Laterales", type: "Hombro Lateral", sets: "4 x 12-15" },
+  { name: "Pájaros en Polea / Mancuerna", type: "Deltoides Posterior", sets: "3 x 15" },
+  { name: "Sentadilla Trasera con Barra", type: "Pierna / Cuádriceps", sets: "4 x 8-10" },
+  { name: "Prensa de Piernas Inclinada", type: "Pierna", sets: "4 x 10-12" },
+  { name: "Sentadilla Búlgara", type: "Pierna / Glúteo", sets: "3 x 10/pierna" },
+  { name: "Peso Muerto Rumano", type: "Isquios / Glúteos", sets: "4 x 8-10" },
+  { name: "Hip Thrust con Barra", type: "Glúteos", sets: "4 x 10-12" },
+  { name: "Curl Femoral Tumbado", type: "Isquios", sets: "4 x 12" },
+  { name: "Curl de Bíceps con Barra Z", type: "Bíceps", sets: "3 x 10-12" },
+  { name: "Curl Martillo con Mancuernas", type: "Bíceps / Braquial", sets: "3 x 12" },
+  { name: "Fondos en Paralelas", type: "Tríceps / Pecho", sets: "3 x 10-12" },
+  { name: "Extensión de Tríceps en Polea", type: "Tríceps", sets: "4 x 12" },
+  { name: "Rueda Abdominal", type: "Core", sets: "4 x 12" },
+  { name: "Plancha Abdominal Isometrica", type: "Core", sets: "3 x 45s" }
+];
+
+const ROUTINE_TEMPLATES = {
   fullbody: [
-    { day: "Lunes", focus: "Full Body A (Énfasis Empuje & Cuádriceps)", exercises: [["Sentadilla trasera con barra / Prensa", "4 x 8-10"], ["Press de banca plano", "4 x 8-10"], ["Remo con barra / polea", "4 x 10"], ["Elevaciones laterales con mancuernas", "3 x 12-15"], ["Plancha abdominal", "3 x 45s"]] },
-    { day: "Miércoles", focus: "Full Body B (Énfasis Tracción & Isquios)", exercises: [["Peso muerto rumano", "4 x 8-10"], ["Press militar mancuernas / barra", "4 x 8-10"], ["Dominadas / Jalón al pecho", "4 x 8-10"], ["Fondos en paralelas / Flexiones", "3 x 10-12"], ["Curl de bíceps", "3 x 12"]] },
-    { day: "Viernes", focus: "Full Body C (Hipertrofia & Glúteos)", exercises: [["Hip Thrust con barra", "4 x 10-12"], ["Sentadilla búlgara", "3 x 10/pierna"], ["Press inclinado mancuernas", "4 x 10"], ["Remo unilateral con mancuerna", "3 x 10"], ["Extensión de tríceps en polea", "3 x 12"]] }
+    { day: "Lunes", focus: "Full Body A (Énfasis Empuje)", exercises: [["Sentadilla Trasera / Prensa", "4 x 8-10"], ["Press Banca Plano", "4 x 8-10"], ["Remo con Barra", "4 x 10"], ["Elevaciones Laterales", "3 x 15"], ["Plancha Abdominal", "3 x 45s"]] },
+    { day: "Miércoles", focus: "Full Body B (Énfasis Tracción)", exercises: [["Peso Muerto Rumano", "4 x 8-10"], ["Press Militar", "4 x 8-10"], ["Jalón al Pecho / Dominadas", "4 x 8-10"], ["Fondos / Flexiones", "3 x 12"], ["Curl Bíceps", "3 x 12"]] },
+    { day: "Viernes", focus: "Full Body C (Hipertrofia & Glúteo)", exercises: [["Hip Thrust con Barra", "4 x 10"], ["Sentadilla Búlgara", "3 x 10/pierna"], ["Press Inclinado", "4 x 10"], ["Remo Mancuerna", "3 x 10"], ["Extensión Tríceps", "3 x 12"]] }
   ],
   ppl: [
-    { day: "Día 1", focus: "Push (Pecho, Hombro & Tríceps)", exercises: [["Press banca plano", "4 x 8"], ["Press inclinado con mancuernas", "4 x 10"], ["Press militar de pie", "3 x 8-10"], ["Elevaciones laterales", "4 x 15"], ["Extensión tríceps en polea", "3 x 12"]] },
-    { day: "Día 2", focus: "Pull (Espalda, Deltoides Posterior & Bíceps)", exercises: [["Jalón al pecho / Dominadas", "4 x 8-10"], ["Remo en polea baja", "4 x 10"], ["Pájaros para posterior", "3 x 15"], ["Curl bíceps barra Z", "3 x 10"], ["Curl martillo mancuernas", "3 x 12"]] },
-    { day: "Día 3", focus: "Legs (Cuádriceps, Isquios & Glúteos)", exercises: [["Sentadilla con barra", "4 x 8"], ["Peso muerto rumano", "4 x 10"], ["Prensa de piernas", "3 x 12"], ["Curl femoral tumbado", "3 x 12"], ["Gemelos de pie", "4 x 15"]] },
-    { day: "Día 4", focus: "Push / Pull Hipertrofia", exercises: [["Press con mancuernas", "4 x 10"], ["Remo con barra", "4 x 10"], ["Aperturas en polea", "3 x 12"], ["Supererie Bíceps + Tríceps", "3 x 12"]] }
+    { day: "Día 1", focus: "Push (Pecho, Hombro, Tríceps)", exercises: [["Press Banca Plano", "4 x 8"], ["Press Inclinado Mancuernas", "4 x 10"], ["Press Militar", "3 x 10"], ["Elevaciones Laterales", "4 x 15"], ["Extensión Tríceps Polea", "3 x 12"]] },
+    { day: "Día 2", focus: "Pull (Espalda & Bíceps)", exercises: [["Jalón al Pecho / Dominadas", "4 x 8-10"], ["Remo Polea Baja", "4 x 10"], ["Pájaros Posterior", "3 x 15"], ["Curl Bíceps Barra Z", "3 x 10"], ["Curl Martillo", "3 x 12"]] },
+    { day: "Día 3", focus: "Legs (Pierna & Glúteos)", exercises: [["Sentadilla con Barra", "4 x 8"], ["Peso Muerto Rumano", "4 x 10"], ["Prensa 45°", "3 x 12"], ["Curl Femoral", "3 x 12"], ["Gemelos de Pie", "4 x 15"]] },
+    { day: "Día 4", focus: "Push / Pull Hipertrofia", exercises: [["Press con Mancuernas", "4 x 10"], ["Remo con Barra", "4 x 10"], ["Aperturas Polea", "3 x 12"], ["Bíceps + Tríceps", "3 x 12"]] }
   ],
   torso_pierna: [
-    { day: "Lunes", focus: "Torso Fuerza", exercises: [["Press banca plano", "4 x 6-8"], ["Remo con barra", "4 x 6-8"], ["Press militar", "3 x 8"], ["Jalón al pecho", "3 x 10"]] },
-    { day: "Martes", focus: "Pierna Fuerza", exercises: [["Sentadilla", "4 x 6-8"], ["Peso muerto rumano", "4 x 8"], ["Prensa", "3 x 10"], ["Gemelos", "4 x 12"]] },
-    { day: "Jueves", focus: "Torso Hipertrofia", exercises: [["Press inclinado mancuernas", "4 x 10-12"], ["Remo polea baja", "4 x 10-12"], ["Elevaciones laterales", "4 x 15"], ["Bíceps / Tríceps", "3 x 12"]] },
-    { day: "Viernes", focus: "Pierna Hipertrofia & Core", exercises: [["Sentadilla búlgara", "3 x 10/pierna"], ["Hip Thrust", "4 x 10-12"], ["Curl femoral", "4 x 12"], ["Abdominales en polea", "4 x 15"]] }
+    { day: "Lunes", focus: "Torso Fuerza", exercises: [["Press Banca Plano", "4 x 6-8"], ["Remo con Barra", "4 x 6-8"], ["Press Militar", "3 x 8"], ["Jalón al Pecho", "3 x 10"]] },
+    { day: "Martes", focus: "Pierna Fuerza", exercises: [["Sentadilla con Barra", "4 x 6-8"], ["Peso Muerto Rumano", "4 x 8"], ["Prensa", "3 x 10"], ["Gemelos", "4 x 12"]] },
+    { day: "Jueves", focus: "Torso Hipertrofia", exercises: [["Press Inclinado Mancuernas", "4 x 10-12"], ["Remo Polea", "4 x 10-12"], ["Elevaciones Laterales", "4 x 15"], ["Bíceps / Tríceps", "3 x 12"]] },
+    { day: "Viernes", focus: "Pierna Hipertrofia", exercises: [["Sentadilla Búlgara", "3 x 10/pierna"], ["Hip Thrust", "4 x 10-12"], ["Curl Femoral", "4 x 12"], ["Abdomen Polea", "4 x 15"]] }
   ],
   chest_arms: [
-    { day: "Lunes", focus: "Pecho Pesado & Bíceps", exercises: [["Press banca plano barra", "4 x 6-8"], ["Press inclinado mancuernas", "4 x 10"], ["Cruces de polea", "3 x 12"], ["Curl bíceps barra recta", "4 x 10"], ["Curl en banco inclinado", "3 x 12"]] },
-    { day: "Miércoles", focus: "Hombro & Tríceps", exercises: [["Press militar", "4 x 8"], ["Elevaciones laterales polea", "4 x 15"], ["Fondos entre paralelas", "4 x 10"], ["Press francés barra Z", "3 x 10"], ["Extensión polea cuerda", "3 x 12"]] },
-    { day: "Viernes", focus: "Volumen Torso & Brazos", exercises: [["Press declinado / Fondos", "4 x 10"], ["Aperturas mancuernas", "3 x 12"], ["Curl martillo", "4 x 12"], ["Patada de tríceps", "3 x 12"]] }
+    { day: "Lunes", focus: "Pecho Pesado & Bíceps", exercises: [["Press Banca Plano", "4 x 6-8"], ["Press Inclinado Mancuernas", "4 x 10"], ["Cruces Polea", "3 x 12"], ["Curl Bíceps Barra", "4 x 10"], ["Curl Inclinado", "3 x 12"]] },
+    { day: "Miércoles", focus: "Hombro & Tríceps", exercises: [["Press Militar", "4 x 8"], ["Elevaciones Laterales", "4 x 15"], ["Fondos Paralelas", "4 x 10"], ["Press Francés", "3 x 10"], ["Extensión Cuerda", "3 x 12"]] },
+    { day: "Viernes", focus: "Volumen Torso & Brazos", exercises: [["Press Declinado / Fondos", "4 x 10"], ["Aperturas Mancuerna", "3 x 12"], ["Curl Martillo", "4 x 12"], ["Patada Tríceps", "3 x 12"]] }
   ],
   back_shoulders: [
-    { day: "Lunes", focus: "Espalda Amplitud (Dorsal)", exercises: [["Dominadas lastradas / neutras", "4 x 6-8"], ["Jalón al pecho agarre cerrado", "4 x 10"], ["Pullover en polea alta", "3 x 12"], ["Face Pulls", "4 x 15"]] },
-    { day: "Miércoles", focus: "Hombro 3D & Trapecio", exercises: [["Press con mancuernas sentado", "4 x 8-10"], ["Elevaciones laterales pesadas + drop", "4 x 12-15"], ["Pájaros en máquina", "4 x 15"], ["Encogimientos trapecio", "4 x 12"]] },
-    { day: "Viernes", focus: "Espalda Densidad & Lumbar", exercises: [["Remo con barra T", "4 x 8"], ["Remo unilateral mancuerna", "4 x 10"], ["Hiperextensiones lumbares", "3 x 15"], ["Planchas laterales", "3 x 45s"]] }
+    { day: "Lunes", focus: "Espalda Amplitud (Dorsal)", exercises: [["Dominadas Lastradas/Neutras", "4 x 6-8"], ["Jalón Agarre Cerrado", "4 x 10"], ["Pullover Polea Alta", "3 x 12"], ["Face Pulls", "4 x 15"]] },
+    { day: "Miércoles", focus: "Hombro 3D & Trapecio", exercises: [["Press Mancuerna Sentado", "4 x 8-10"], ["Elevaciones Laterales", "4 x 12-15"], ["Pájaros Máquina", "4 x 15"], ["Encogimientos", "4 x 12"]] },
+    { day: "Viernes", focus: "Espalda Densidad & Lumbar", exercises: [["Remo Barra T", "4 x 8"], ["Remo Unilateral Mancuerna", "4 x 10"], ["Hiperextensiones", "3 x 15"], ["Planchas Laterales", "3 x 45s"]] }
   ],
   legs_glutes: [
-    { day: "Lunes", focus: "Cuádriceps & Aductores", exercises: [["Sentadilla trasera", "4 x 8"], ["Prensa 45 grados", "4 x 10"], ["Zancadas con mancuerna", "3 x 12/pierna"], ["Extensiones cuádriceps", "3 x 15"]] },
-    { day: "Miércoles", focus: "Cadena Posterior & Glúteo", exercises: [["Hip Thrust con barra", "4 x 8-10"], ["Peso muerto rumano", "4 x 8-10"], ["Curl femoral tumbado", "4 x 12"], ["Abductores en máquina", "4 x 15"]] },
-    { day: "Viernes", focus: "Pierna Completa & Gemelos", exercises: [["Sentadilla búlgara", "3 x 10/pierna"], ["Prensa unilateral", "3 x 12"], ["Elevación gemelos de pie", "4 x 15"], ["Elevación gemelos sentado", "4 x 15"]] }
+    { day: "Lunes", focus: "Cuádriceps & Aductores", exercises: [["Sentadilla Trasera", "4 x 8"], ["Prensa 45°", "4 x 10"], ["Zancadas Mancuerna", "3 x 12/pierna"], ["Extensiones Cuádriceps", "3 x 15"]] },
+    { day: "Miércoles", focus: "Cadena Posterior & Glúteo", exercises: [["Hip Thrust", "4 x 8-10"], ["Peso Muerto Rumano", "4 x 8-10"], ["Curl Femoral Tumbado", "4 x 12"], ["Abductores Máquina", "4 x 15"]] },
+    { day: "Viernes", focus: "Pierna Completa & Gemelos", exercises: [["Sentadilla Búlgara", "3 x 10/pierna"], ["Prensa Unilateral", "3 x 12"], ["Gemelos de Pie", "4 x 15"], ["Gemelos Sentado", "4 x 15"]] }
   ]
 };
 
@@ -83,10 +114,41 @@ document.addEventListener('DOMContentLoaded', () => {
   setupProfileModal();
   setupHabitConfig();
   setupChecklist();
-  setupBreathGuide();
-  setupRoutineGenerator();
+  setupRelaxProtocols();
+  setupRoutineSystem();
+  setupSearchEngine();
+  checkWeighReminder();
   initApp();
 });
+
+// Comprobación de Recordatorio de Pesaje
+function checkWeighReminder() {
+  if (!userProfile || userProfile.weighFreq === 'never') return;
+
+  const lastWeigh = localStorage.getItem('lastWeighedDate');
+  const now = Date.now();
+  let daysLimit = 3;
+
+  if (userProfile.weighFreq === 'daily') daysLimit = 1;
+  else if (userProfile.weighFreq === 'weekly') daysLimit = 7;
+
+  if (!lastWeigh || (now - Number(lastWeigh)) > (daysLimit * 24 * 60 * 60 * 1000)) {
+    setTimeout(() => {
+      const peso = prompt(`🔔 Recordatorio de Pesaje (${userProfile.weighFreq}):\nIntroduce tu peso actual en kg para actualizar tu plan calórico:`, userProfile.weight);
+      if (peso && !isNaN(peso)) {
+        userProfile.weight = Number(peso);
+        localStorage.setItem('userProfile', JSON.stringify(userProfile));
+        localStorage.setItem('lastWeighedDate', String(Date.now()));
+        fetch(`${SUPABASE_URL}/rest/v1/body_metrics`, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({ weight_kg: Number(peso), note: 'Pesaje recordatorio automático' })
+        });
+        renderCoachEngine();
+      }
+    }, 800);
+  }
+}
 
 // Onboarding & Modal de Perfil
 function setupProfileModal() {
@@ -111,7 +173,7 @@ function setupProfileModal() {
 
     let safety = "🟢 Ritmo óptimo y sostenible";
     if (weeklyRate > 1.0) safety = "🔴 Déficit agresivo";
-    else if (weeklyRate > 0.7) safety = "🟡 Ritmo moderado / rápido";
+    else if (weeklyRate > 0.7) safety = "🟡 Ritmo moderado";
 
     preview.innerHTML = `
       <strong>Meta:</strong> Bajar ${kg} kg en ${w} semanas (${weeklyRate} kg/sem).<br>
@@ -123,7 +185,6 @@ function setupProfileModal() {
   inLoss.addEventListener('input', updatePlanPreview);
   inWeeks.addEventListener('input', updatePlanPreview);
 
-  // Si no hay perfil guardado, forzar apertura al cargar la página
   if (!userProfile) {
     userProfile = {
       name: "Alejandro",
@@ -132,13 +193,14 @@ function setupProfileModal() {
       weight: 80.0,
       targetLossKg: 4,
       weeks: 8,
+      weighFreq: "3days",
       habitType: "bombo",
       customDailyCost: 1.70,
       workoutFocus: "fullbody",
       workoutDays: 4
     };
     modal.classList.add('open');
-    btnClose.style.display = 'none'; // Obligatorio guardar primero
+    btnClose.style.display = 'none';
   }
 
   btnOpen.addEventListener('click', () => {
@@ -146,6 +208,7 @@ function setupProfileModal() {
     document.getElementById('prof-age').value = userProfile.age;
     document.getElementById('prof-height').value = userProfile.height;
     document.getElementById('prof-weight').value = userProfile.weight;
+    document.getElementById('prof-weigh-freq').value = userProfile.weighFreq || '3days';
     inLoss.value = userProfile.targetLossKg;
     inWeeks.value = userProfile.weeks;
     updatePlanPreview();
@@ -163,6 +226,7 @@ function setupProfileModal() {
       age: Number(document.getElementById('prof-age').value),
       height: Number(document.getElementById('prof-height').value),
       weight: Number(document.getElementById('prof-weight').value),
+      weighFreq: document.getElementById('prof-weigh-freq').value,
       targetLossKg: Number(inLoss.value),
       weeks: Number(inWeeks.value)
     };
@@ -175,72 +239,217 @@ function setupProfileModal() {
   });
 }
 
-// Generador de Rutinas
-function setupRoutineGenerator() {
+// Buscador de Actividades & Ejercicios
+function setupSearchEngine() {
+  const input = document.getElementById('activity-search-input');
+  const results = document.getElementById('search-results');
+  if (!input || !results) return;
+
+  input.addEventListener('input', (e) => {
+    const val = e.target.value.toLowerCase().trim();
+    if (!val) {
+      results.style.display = 'none';
+      return;
+    }
+
+    const matches = ACTIVITY_DATABASE.filter(a => a.name.toLowerCase().includes(val) || a.type.toLowerCase().includes(val));
+    if (matches.length === 0) {
+      results.innerHTML = `<div class="search-item"><span>Sin resultados para "${val}"</span></div>`;
+    } else {
+      results.innerHTML = matches.map(m => `
+        <div class="search-item" onclick="selectSearchActivity('${m.name}', '${m.sets || m.kcal}')">
+          <div>
+            <strong>${m.name}</strong><br>
+            <small style="color: #94a3b8;">${m.type}</small>
+          </div>
+          <span style="color: #38bdf8; font-weight: 600;">${m.sets || m.kcal}</span>
+        </div>
+      `).join('');
+    }
+    results.style.display = 'block';
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!input.contains(e.target) && !results.contains(e.target)) {
+      results.style.display = 'none';
+    }
+  });
+}
+
+window.selectSearchActivity = function(name, detail) {
+  const dayIdx = prompt(`¿A qué día de tu rutina deseas añadir "${name}"? (Ej: 1 para Día 1, 2 para Día 2, etc.):`, "1");
+  if (dayIdx && customRoutines) {
+    const idx = parseInt(dayIdx) - 1;
+    if (customRoutines[idx]) {
+      customRoutines[idx].exercises.push([name, detail || "3 x 10"]);
+      localStorage.setItem('customUserRoutines', JSON.stringify(customRoutines));
+      renderCurrentRoutine();
+      alert(`¡${name} añadido al ${customRoutines[idx].day}!`);
+    }
+  }
+  document.getElementById('search-results').style.display = 'none';
+  document.getElementById('activity-search-input').value = '';
+};
+
+// Sistema de Rutina & Edición en Vivo
+function setupRoutineSystem() {
   const selectFocus = document.getElementById('workout-focus');
   const selectDays = document.getElementById('workout-days-week');
   const btnGen = document.getElementById('btn-generate-routine');
-  const container = document.getElementById('weekly-routine-container');
 
   if (userProfile.workoutFocus && selectFocus) selectFocus.value = userProfile.workoutFocus;
   if (userProfile.workoutDays && selectDays) selectDays.value = userProfile.workoutDays;
 
-  function renderRoutine() {
+  function generateNewRoutine() {
     const focus = selectFocus.value;
     const daysCount = Number(selectDays.value);
-    let routine = ROUTINE_DATABASE[focus] || ROUTINE_DATABASE.fullbody;
+    let base = ROUTINE_TEMPLATES[focus] || ROUTINE_TEMPLATES.fullbody;
 
     userProfile.workoutFocus = focus;
     userProfile.workoutDays = daysCount;
     localStorage.setItem('userProfile', JSON.stringify(userProfile));
 
-    // Si pide más días de los que tiene la plantilla base, duplica inteligentemente
-    let renderedList = [...routine];
-    while (renderedList.length < daysCount) {
-      renderedList.push({ day: `Día Extra ${renderedList.length + 1}`, focus: "Cardio LISS / Fútbol / Movilidad", exercises: [["Partido o carrera continua", "45-60 min"], ["Estiramientos completos", "15 min"]] });
+    let list = JSON.parse(JSON.stringify(base));
+    while (list.length < daysCount) {
+      list.push({ day: `Día ${list.length + 1}`, focus: "Cardio LISS / Pádel / Fútbol", exercises: [["Pádel o Deporte Libre", "60 min"], ["Estiramientos Dinámicos", "10 min"]] });
     }
-    renderedList = renderedList.slice(0, daysCount);
-
-    container.innerHTML = renderedList.map(r => `
-      <div class="routine-day-card">
-        <div class="routine-day-header">
-          <span class="routine-day-name">${r.day}</span>
-          <span class="routine-day-focus">${r.focus}</span>
-        </div>
-        <ul class="exercise-list">
-          ${r.exercises.map(ex => `
-            <li class="exercise-item">
-              <span>${ex[0]}</span>
-              <span class="exercise-sets">${ex[1]}</span>
-            </li>
-          `).join('')}
-        </ul>
-      </div>
-    `).join('');
+    customRoutines = list.slice(0, daysCount);
+    localStorage.setItem('customUserRoutines', JSON.stringify(customRoutines));
+    renderCurrentRoutine();
   }
 
-  if (btnGen) btnGen.addEventListener('click', renderRoutine);
-  renderRoutine();
+  if (!customRoutines) generateNewRoutine();
+  else renderCurrentRoutine();
+
+  if (btnGen) btnGen.addEventListener('click', generateNewRoutine);
 }
 
-// Zonas Cardíacas
-function renderHeartZones() {
-  const container = document.getElementById('heart-zones-box');
-  if (!container) return;
+function renderCurrentRoutine() {
+  const container = document.getElementById('weekly-routine-container');
+  if (!container || !customRoutines) return;
 
-  const maxHr = 220 - userProfile.age;
-  const z2_min = Math.round(maxHr * 0.60);
-  const z2_max = Math.round(maxHr * 0.70);
-  const z3_max = Math.round(maxHr * 0.80);
-  const z4_max = Math.round(maxHr * 0.90);
+  container.innerHTML = customRoutines.map((r, dIdx) => `
+    <div class="routine-day-card">
+      <div class="routine-day-header">
+        <span class="routine-day-name">${r.day}</span>
+        <span class="routine-day-focus">${r.focus}</span>
+      </div>
+      <ul class="exercise-list">
+        ${r.exercises.map((ex, eIdx) => `
+          <li class="exercise-item">
+            <span>${ex[0]}</span>
+            <span class="exercise-sets" onclick="editExerciseSets(${dIdx}, ${eIdx})">${ex[1]} ✏️</span>
+          </li>
+        `).join('')}
+      </ul>
+      <button class="btn-add-ex" onclick="addNewExerciseToDay(${dIdx})">+ Añadir ejercicio a ${r.day}</button>
+    </div>
+  `).join('');
+}
 
-  container.innerHTML = `
-    <div class="zone-row"><span>Zona 1 (Recuperación):</span> <strong>< ${z2_min} bpm</strong></div>
-    <div class="zone-row"><span style="color: #10b981;">Zona 2 (Quema Grasa / Base):</span> <strong style="color: #10b981;">${z2_min} - ${z2_max} bpm</strong></div>
-    <div class="zone-row"><span>Zona 3 (Aeróbica / Fútbol):</span> <strong>${z2_max + 1} - ${z3_max} bpm</strong></div>
-    <div class="zone-row"><span style="color: #f59e0b;">Zona 4 (Umbral Anaeróbico):</span> <strong style="color: #f59e0b;">${z3_max + 1} - ${z4_max} bpm</strong></div>
-    <div class="zone-row"><span style="color: #ef4444;">Zona 5 (Máximo Esfuerzo):</span> <strong style="color: #ef4444;">> ${z4_max} bpm</strong></div>
-  `;
+window.editExerciseSets = function(dayIdx, exIdx) {
+  const current = customRoutines[dayIdx].exercises[exIdx];
+  const newSets = prompt(`Editar series/repeticiones para "${current[0]}":`, current[1]);
+  if (newSets !== null && newSets.trim() !== '') {
+    customRoutines[dayIdx].exercises[exIdx][1] = newSets.trim();
+    localStorage.setItem('customUserRoutines', JSON.stringify(customRoutines));
+    renderCurrentRoutine();
+  }
+};
+
+window.addNewExerciseToDay = function(dayIdx) {
+  const name = prompt("Nombre del ejercicio o actividad (Ej: Pádel, Curl Martillo, Prensa...):");
+  if (!name) return;
+  const sets = prompt("Series y repeticiones (Ej: 4 x 12, 60 min, etc.):", "3 x 10");
+  customRoutines[dayIdx].exercises.push([name, sets || "3 x 10"]);
+  localStorage.setItem('customUserRoutines', JSON.stringify(customRoutines));
+  renderCurrentRoutine();
+};
+
+// Protocolos de Relajación & Movilidad Guiada
+function setupRelaxProtocols() {
+  const btn = document.getElementById('btn-start-relax');
+  const typeSelect = document.getElementById('relax-routine-type');
+  const guideBox = document.getElementById('relax-guide-box');
+  const statusEl = document.getElementById('relax-status');
+  const timerEl = document.getElementById('relax-timer');
+
+  if (!btn || !guideBox) return;
+
+  btn.addEventListener('click', () => {
+    guideBox.style.display = 'block';
+    btn.style.display = 'none';
+    const type = typeSelect.value;
+
+    if (type === 'breath') {
+      let phase = 'inhale';
+      let count = 4;
+      statusEl.innerText = "Inhala lentamente por la nariz...";
+      statusEl.style.color = "#38bdf8";
+
+      const breathInterval = setInterval(() => {
+        timerEl.innerText = count;
+        count--;
+        if (count < 0) {
+          if (phase === 'inhale') {
+            phase = 'hold';
+            count = 7;
+            statusEl.innerText = "Mantén el aire en los pulmones...";
+            statusEl.style.color = "#f59e0b";
+          } else if (phase === 'hold') {
+            phase = 'exhale';
+            count = 8;
+            statusEl.innerText = "Exhala suavemente por la boca...";
+            statusEl.style.color = "#10b981";
+          } else {
+            phase = 'inhale';
+            count = 4;
+            statusEl.innerText = "Inhala de nuevo...";
+            statusEl.style.color = "#38bdf8";
+          }
+        }
+      }, 1000);
+
+      setTimeout(() => {
+        clearInterval(breathInterval);
+        guideBox.style.display = 'none';
+        btn.style.display = 'block';
+        alert('¡Sesión 4-7-8 completada!');
+      }, 60000);
+
+    } else {
+      // Movilidad Cervical
+      const neckSteps = [
+        "Gira la cabeza suavemente hacia la derecha (15s)",
+        "Gira la cabeza suavemente hacia la izquierda (15s)",
+        "Inclina la oreja derecha hacia el hombro derecho (15s)",
+        "Inclina la oreja izquierda hacia el hombro izquierdo (15s)"
+      ];
+      let stepIdx = 0;
+      let count = 15;
+      statusEl.innerText = neckSteps[stepIdx];
+      statusEl.style.color = "#38bdf8";
+
+      const neckInterval = setInterval(() => {
+        timerEl.innerText = count;
+        count--;
+        if (count < 0) {
+          stepIdx++;
+          if (stepIdx < neckSteps.length) {
+            count = 15;
+            statusEl.innerText = neckSteps[stepIdx];
+          }
+        }
+      }, 1000);
+
+      setTimeout(() => {
+        clearInterval(neckInterval);
+        guideBox.style.display = 'none';
+        btn.style.display = 'block';
+        alert('¡Movilidad cervical completada! Tensión liberada.');
+      }, 62000);
+    }
+  });
 }
 
 function getDailyCost() {
@@ -253,6 +462,7 @@ function getDailyCost() {
   }
 }
 
+// Progresión Temporal Real
 function updateTimerAndSavings() {
   const diff = Math.max(0, Date.now() - Number(cleanSince));
   const days = Math.floor(diff / (1000 * 60 * 60 * 24));
@@ -274,14 +484,26 @@ function updateTimerAndSavings() {
   const moneyEl = document.getElementById('metric-money-saved');
   if (moneyEl) moneyEl.innerText = `${savedMoney} €`;
 
-  // Barra de recuperación pulmonar
-  const dopPercent = Math.min(100, Math.round(20 + (days * 5)));
-  const dopEl = document.getElementById('prog-dop-val');
+  // Cálculos temporales biológicos reales
+  const totalHours = diff / (1000 * 60 * 60);
+
+  // 1. Oxigenación & Monóxido (100% en 24h)
+  const oxPct = Math.min(100, Math.round((totalHours / 24) * 100));
+  const oxVal = document.getElementById('prog-ox-val');
+  const oxBar = document.getElementById('prog-ox-bar');
+  if (oxVal && oxBar) { oxVal.innerText = `${oxPct}%`; oxBar.style.width = `${oxPct}%`; }
+
+  // 2. Cilios Pulmonares (100% en 30 días)
+  const ciliaPct = Math.min(100, Math.round((days / 30) * 100));
+  const ciliaVal = document.getElementById('prog-cilia-val');
+  const ciliaBar = document.getElementById('prog-cilia-bar');
+  if (ciliaVal && ciliaBar) { ciliaVal.innerText = `${ciliaPct}%`; ciliaBar.style.width = `${ciliaPct}%`; }
+
+  // 3. Receptores Dopamina (100% en 90 días)
+  const dopPct = Math.min(100, Math.round((days / 90) * 100));
+  const dopVal = document.getElementById('prog-dop-val');
   const dopBar = document.getElementById('prog-dop-bar');
-  if (dopEl && dopBar) {
-    dopEl.innerText = `${dopPercent}%`;
-    dopBar.style.width = `${dopPercent}%`;
-  }
+  if (dopVal && dopBar) { dopVal.innerText = `${dopPct}%`; dopBar.style.width = `${dopPct}%`; }
 }
 setInterval(updateTimerAndSavings, 1000);
 updateTimerAndSavings();
@@ -455,7 +677,7 @@ function renderWorkoutsList() {
     return `
       <div class="reading-pill">
         <div>
-          <strong>⚽ ${w.workout_type || 'Entreno Apple Watch'}</strong><br>
+          <strong>🏃 ${w.workout_type || 'Sesión Apple Watch'}</strong><br>
           <small style="color: #94a3b8;">${date}</small>
         </div>
         <strong style="color: #38bdf8;">❤️ ${w.avg_bpm ? w.avg_bpm + ' bpm' : 'OK'}</strong>
@@ -482,6 +704,25 @@ function renderDiagnostic() {
   else statusHTML += `🔴 <strong>Rango elevado:</strong> Tu sistema simpático está activo. Respira hondo y descansa.`;
 
   container.innerHTML = statusHTML;
+}
+
+function renderHeartZones() {
+  const container = document.getElementById('heart-zones-box');
+  if (!container) return;
+
+  const maxHr = 220 - (userProfile ? userProfile.age : 24);
+  const z2_min = Math.round(maxHr * 0.60);
+  const z2_max = Math.round(maxHr * 0.70);
+  const z3_max = Math.round(maxHr * 0.80);
+  const z4_max = Math.round(maxHr * 0.90);
+
+  container.innerHTML = `
+    <div class="zone-row"><span>Zona 1 (Recuperación):</span> <strong>< ${z2_min} bpm</strong></div>
+    <div class="zone-row"><span style="color: #10b981;">Zona 2 (Quema Grasa / Base):</span> <strong style="color: #10b981;">${z2_min} - ${z2_max} bpm</strong></div>
+    <div class="zone-row"><span>Zona 3 (Aeróbica / Deporte):</span> <strong>${z2_max + 1} - ${z3_max} bpm</strong></div>
+    <div class="zone-row"><span style="color: #f59e0b;">Zona 4 (Umbral Anaeróbico):</span> <strong style="color: #f59e0b;">${z3_max + 1} - ${z4_max} bpm</strong></div>
+    <div class="zone-row"><span style="color: #ef4444;">Zona 5 (Máximo Esfuerzo):</span> <strong style="color: #ef4444;">> ${z4_max} bpm</strong></div>
+  `;
 }
 
 function setupHabitConfig() {
@@ -522,56 +763,6 @@ function setupChecklist() {
         localStorage.setItem(todayKey, JSON.stringify(dailyChecklist));
       });
     }
-  });
-}
-
-function setupBreathGuide() {
-  const btn = document.getElementById('btn-start-breath');
-  const guideBox = document.getElementById('breath-guide-box');
-  const statusEl = document.getElementById('breath-status');
-  const timerEl = document.getElementById('breath-timer');
-
-  if (!btn || !guideBox) return;
-
-  btn.addEventListener('click', () => {
-    guideBox.style.display = 'block';
-    btn.style.display = 'none';
-
-    let phase = 'inhale';
-    let count = 4;
-    statusEl.innerText = "Inhala lentamente por la nariz...";
-    statusEl.style.color = "#38bdf8";
-
-    const breathInterval = setInterval(() => {
-      timerEl.innerText = count;
-      count--;
-
-      if (count < 0) {
-        if (phase === 'inhale') {
-          phase = 'hold';
-          count = 7;
-          statusEl.innerText = "Mantén el aire en los pulmones...";
-          statusEl.style.color = "#f59e0b";
-        } else if (phase === 'hold') {
-          phase = 'exhale';
-          count = 8;
-          statusEl.innerText = "Exhala suavemente por la boca...";
-          statusEl.style.color = "#10b981";
-        } else {
-          phase = 'inhale';
-          count = 4;
-          statusEl.innerText = "Inhala de nuevo...";
-          statusEl.style.color = "#38bdf8";
-        }
-      }
-    }, 1000);
-
-    setTimeout(() => {
-      clearInterval(breathInterval);
-      guideBox.style.display = 'none';
-      btn.style.display = 'block';
-      alert('¡Sesión completada!');
-    }, 60000);
   });
 }
 
@@ -630,6 +821,7 @@ function initApp() {
         if (weight) {
           userProfile.weight = Number(weight);
           localStorage.setItem('userProfile', JSON.stringify(userProfile));
+          localStorage.setItem('lastWeighedDate', String(Date.now()));
           await fetch(`${SUPABASE_URL}/rest/v1/body_metrics`, {
             method: "POST",
             headers,
