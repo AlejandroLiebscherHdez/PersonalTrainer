@@ -61,30 +61,31 @@ const FOOD_DATABASE = [
   { name: "Brócoli / Espárragos Verdes al Vapor (150g)", type: "Verdura", kcal: 45, p: 4, c: 5, f: 0.4 }
 ];
 
+// Alternativas desglosadas en arrays de ingredientes
 const ALTERNATIVES_POOL = {
   desayuno: [
-    { name: "Tortilla de 3 huevos/claras con jamón de pavo + 60g avena con frutos rojos", kcal: 420 },
-    { name: "Tostadas de centeno con 1/2 aguacate, 2 huevos poché y café solo", kcal: 430 },
-    { name: "Bowl de 250g queso fresco batido 0% con 40g avena, 1 plátano y 15g nueces", kcal: 410 },
-    { name: "Pancakes de avena (60g avena + 150g claras + 1 huevo) con arándanos", kcal: 390 }
+    { items: ["Tortilla de 3 claras y 1 huevo entero con jamón de pavo", "60g de copos de avena en bebida vegetal", "1 puñado de frutos rojos"], kcal: 420 },
+    { items: ["2 tostadas de pan 100% integral de centeno", "1/2 aguacate maduro", "2 huevos poché", "Café o té solo"], kcal: 430 },
+    { items: ["Bowl de 250g queso fresco batido 0% Hacendado", "40g copos de avena", "1 plátano de Canarias", "15g nueces"], kcal: 410 },
+    { items: ["Tortitas de avena caseras (60g avena + 150g claras)", "1 cucharada de queso de untar light", "Arándanos frescos"], kcal: 390 }
   ],
   almuerzo: [
-    { name: "200g pechuga de pollo a la plancha + 150g arroz basmati + brócoli con AOVE", kcal: 580 },
-    { name: "180g ternera magra picada + 200g patata asada + ensalada con tomate y orégano", kcal: 570 },
-    { name: "200g lomo de salmón + 150g boniato al horno + espárragos verdes", kcal: 590 },
-    { name: "Plato de lentejas con verduras y 150g tacos de pechuga de pavo", kcal: 550 }
+    { items: ["200g pechuga de pollo a la plancha", "150g arroz basmati cocido", "Brócoli al vapor con 1 cda de AOVE"], kcal: 580 },
+    { items: ["180g ternera magra picada a la plancha", "200g patata o boniato al horno", "Ensalada mixta (lechuga, tomate, pepino)"], kcal: 570 },
+    { items: ["200g lomo de salmón fresco al horno", "150g boniato asado", "Espárragos verdes a la plancha con sal en escamas"], kcal: 590 },
+    { items: ["Plato de lentejas con verduras", "150g dados de pechuga de pavo", "1 rebanada de pan integral"], kcal: 550 }
   ],
   merienda: [
-    { name: "200g queso batido 0% + 1 scoop proteína whey + 20g almendras", kcal: 320 },
-    { name: "Sándwich de pan integral con 2 latas de atún al natural y tomate", kcal: 310 },
-    { name: "Yogur griego con 1 plátano troceado y 20g crema de cacahuete 100%", kcal: 330 },
-    { name: "Batido de 300ml leche/bebida vegetal + 1 scoop whey + 40g copos de avena", kcal: 340 }
+    { items: ["200g queso fresco batido 0% Hacendado", "1 cacito de proteína whey", "20g almendras o nueces crudas"], kcal: 320 },
+    { items: ["Sándwich de pan integral", "2 latas de atún al natural", "Rodajas de tomate y orégano"], kcal: 310 },
+    { items: ["1 yogur griego natural", "1 plátano de Canarias", "20g crema de cacahuete 100% Hacendado"], kcal: 330 },
+    { items: ["Batido con 300ml bebida vegetal o leche", "1 scoop proteína whey", "40g copos de avena"], kcal: 340 }
   ],
   cena: [
-    { name: "200g merluza o bacalao al vapor + puré de calabaza + ensalada mixta", kcal: 380 },
-    { name: "Revuelto de 4 claras y 1 huevo con gambas y espárragos + 1 tostada integral", kcal: 360 },
-    { name: "180g pechuga de pavo al limón con champiñones salteados y ensalada", kcal: 350 },
-    { name: "Hamburguesa casera de pollo 100% (200g) con verduras a la plancha", kcal: 390 }
+    { items: ["200g filete de merluza o bacalao a la plancha", "Puré casero de calabaza", "Ensalada verde con aceite de oliva virgen extra"], kcal: 380 },
+    { items: ["Revuelto de 4 claras y 1 huevo con gambas y espárragos", "1 tostada de pan de centeno"], kcal: 360 },
+    { items: ["180g solomillo de pavo al limón", "Champiñones salteados con ajo y perejil", "Ensalada de canónigos y tomate"], kcal: 350 },
+    { items: ["2 hamburguesas caseras de pollo 100%", "Verduras asadas (calabacín, pimiento, cebolla)"], kcal: 390 }
   ]
 };
 
@@ -162,7 +163,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initApp();
 });
 
-// Creador de Recetas Inteligente con Análisis Nutricional
+// Creador y Analizador Real de Recetas
 function setupCustomRecipeCreator() {
   const form = document.getElementById('create-recipe-form');
   const box = document.getElementById('recipe-analysis-box');
@@ -177,34 +178,52 @@ function setupCustomRecipeCreator() {
     const title = document.getElementById('recipe-title').value.trim();
     const ingredients = document.getElementById('recipe-ingredients').value.trim();
     const kcal = Number(document.getElementById('recipe-kcal').value);
-    const protein = Number(document.getElementById('recipe-protein').value) || 20;
+    const protein = Number(document.getElementById('recipe-protein').value) || 0;
 
-    // Análisis inteligente según ingredientes y calorías
+    const lower = (title + " " + ingredients).toLowerCase();
+
+    // Detección de Ultraprocesados / Caprichos
+    const isJunk = lower.includes('donut') || lower.includes('donuts') || lower.includes('bollo') || lower.includes('croissant') || lower.includes('pizza') || lower.includes('hamburguesa con queso') || lower.includes('patatas fritas') || lower.includes('helado') || lower.includes('nutella') || lower.includes('chocolate con leche') || lower.includes('doritos') || lower.includes('galletas');
+
     let suggestedMeal = "Almuerzo o Cena";
-    let reason = "Equilibrada en macros y densidad media.";
+    let icon = "🥗";
+    let evaluation = "";
 
-    const lowerIng = ingredients.toLowerCase();
-    if (lowerIng.includes('avena') || lowerIng.includes('huevo') || lowerIng.includes('tostada') || lowerIng.includes('fruta') || lowerIng.includes('yogur') || kcal < 450) {
-      suggestedMeal = "Desayuno o Merienda";
-      reason = "Aporte de energía rápida, carbohidratos complejos o digestión ligera.";
-    }
-    if (lowerIng.includes('pollo') || lowerIng.includes('arroz') || lowerIng.includes('pasta') || lowerIng.includes('ternera') || lowerIng.includes('patata') || kcal >= 500) {
-      suggestedMeal = "Almuerzo Principal";
-      reason = "Plato contundente, excelente para recuperación post-entrenamiento.";
-    }
-    if (lowerIng.includes('ensalada') || lowerIng.includes('pescado') || lowerIng.includes('merluza') || lowerIng.includes('verdura') || (lowerIng.includes('pollo') && lowerIng.includes('lechuga'))) {
-      suggestedMeal = "Cena Ligera o Almuerzo";
-      reason = "Alta saciedad con bajo impacto glucémico para optimizar el descanso nocturno.";
+    if (isJunk) {
+      icon = "⚠️";
+      suggestedMeal = "Capricho puntual / Cheat Meal (Post-Entreno)";
+      evaluation = `Contiene azúcares simples y grasas saturadas elevadas con baja densidad nutricional. Si decides consumirlo, hazlo cerca de un entreno de alta intensidad o en la merienda para rellenar glucógeno muscular y evitar picos de insulina en la cena.`;
+    } else {
+      const isBreakfast = lower.includes('avena') || lower.includes('huevo') || lower.includes('claras') || lower.includes('tostada') || lower.includes('fruta') || lower.includes('yogur') || lower.includes('leche') || lower.includes('tortitas');
+      const isHeavyLunch = lower.includes('pollo') || lower.includes('arroz') || lower.includes('pasta') || lower.includes('ternera') || lower.includes('patata') || lower.includes('legumbres') || lower.includes('lentejas');
+      const isLightDinner = lower.includes('ensalada') || lower.includes('pescado') || lower.includes('merluza') || lower.includes('salmón') || lower.includes('verdura') || lower.includes('pavo') || lower.includes('champiñones');
+
+      if (isBreakfast && kcal <= 500) {
+        icon = "🥞";
+        suggestedMeal = "Desayuno o Merienda Energética";
+        evaluation = `Excelente combinación de energía matutina y carbohidratos complejos para rendir durante el día.`;
+      } else if (isHeavyLunch && kcal >= 480) {
+        icon = "🍗";
+        suggestedMeal = "Almuerzo Principal";
+        evaluation = `Plato saciante y completo con alta densidad calórica y aminoácidos para recuperación muscular.`;
+      } else if (isLightDinner) {
+        icon = "🥗";
+        suggestedMeal = "Cena Ligera o Almuerzo";
+        evaluation = `Comida limpia con buen volumen y fácil digestión para favorecer el descanso nocturno.`;
+      } else {
+        icon = "🍽️";
+        suggestedMeal = kcal > 500 ? "Almuerzo" : "Merienda / Cena";
+        evaluation = `Aporte calórico equilibrado (~${kcal} kcal).`;
+      }
     }
 
-    const recommendation = `🎯 <strong>Recomendación del Coach:</strong> Esta receta de <strong>${kcal} kcal</strong> encaja idealmente como <strong>${suggestedMeal}</strong>. (${reason})`;
+    const recommendation = `${icon} <strong>Análisis:</strong> Recomendado como <strong>${suggestedMeal}</strong>.<br><small style="color: #94a3b8;">${evaluation}</small>`;
 
-    currentAnalyzedRecipe = { title, ingredients, kcal, protein, recommendation };
+    currentAnalyzedRecipe = { title, ingredients, kcal, protein, recommendation, isJunk };
 
     txt.innerHTML = recommendation;
     box.style.display = 'block';
 
-    // Guardar en Supabase y localmente
     try {
       await fetch(`${SUPABASE_URL}/rest/v1/user_recipes`, {
         method: "POST",
@@ -232,11 +251,15 @@ function setupCustomRecipeCreator() {
       if (mealNum) {
         const idx = parseInt(mealNum) - 1;
         if (customDietPlan[idx]) {
-          customDietPlan[idx].items.push(`${currentAnalyzedRecipe.title} (${currentAnalyzedRecipe.ingredients})`);
+          // Desglosar ingredientes si vienen separados por comas o sumar la receta
+          const rawItems = currentAnalyzedRecipe.ingredients.split(',').map(s => s.trim()).filter(s => s.length > 0);
+          const itemsToAdd = rawItems.length > 1 ? rawItems : [`${currentAnalyzedRecipe.title} (${currentAnalyzedRecipe.ingredients})`];
+
+          customDietPlan[idx].items.push(...itemsToAdd);
           customDietPlan[idx].kcal = currentAnalyzedRecipe.kcal;
           localStorage.setItem('customUserDietPlan', JSON.stringify(customDietPlan));
           renderDietMeals();
-          alert(`¡${currentAnalyzedRecipe.title} añadida con éxito a tu ${customDietPlan[idx].title}!`);
+          alert(`¡"${currentAnalyzedRecipe.title}" añadida con éxito a tu ${customDietPlan[idx].title}!`);
         }
       }
       box.style.display = 'none';
@@ -292,11 +315,14 @@ window.addSavedRecipeToMenu = function(recipeIdx) {
   if (mealNum) {
     const idx = parseInt(mealNum) - 1;
     if (customDietPlan[idx]) {
-      customDietPlan[idx].items.push(`${recipe.title} (${recipe.ingredients})`);
+      const rawItems = recipe.ingredients.split(',').map(s => s.trim()).filter(s => s.length > 0);
+      const itemsToAdd = rawItems.length > 1 ? rawItems : [`${recipe.title} (${recipe.ingredients})`];
+
+      customDietPlan[idx].items.push(...itemsToAdd);
       customDietPlan[idx].kcal = recipe.kcal;
       localStorage.setItem('customUserDietPlan', JSON.stringify(customDietPlan));
       renderDietMeals();
-      alert(`¡${recipe.title} añadida a tu ${customDietPlan[idx].title}!`);
+      alert(`¡"${recipe.title}" añadida a tu ${customDietPlan[idx].title}!`);
     }
   }
 };
@@ -514,11 +540,13 @@ window.toggleMealDone = function(mealId) {
   renderDietMeals();
 };
 
+// Alternativas separadas por líneas
 window.replaceMealAlternative = function(mealType, mealIdx) {
   const pool = ALTERNATIVES_POOL[mealType] || ALTERNATIVES_POOL.almuerzo;
   const randomChoice = pool[Math.floor(Math.random() * pool.length)];
   
-  customDietPlan[mealIdx].items = [randomChoice.name];
+  // Guardamos array de ingredientes individuales
+  customDietPlan[mealIdx].items = [...randomChoice.items];
   customDietPlan[mealIdx].kcal = randomChoice.kcal;
   localStorage.setItem('customUserDietPlan', JSON.stringify(customDietPlan));
   renderDietMeals();
