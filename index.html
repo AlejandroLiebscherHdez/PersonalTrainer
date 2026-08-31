@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>PersonalTrainer AI | Fitness, Nutrition & Habits</title>
-  <link rel="stylesheet" href="style.css?v=120">
+  <link rel="stylesheet" href="style.css?v=130">
   <link rel="manifest" href="manifest.json">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -43,7 +43,7 @@
         <div class="calories-target-box">
           <span class="cal-title">Presupuesto Calórico Recomendado Hoy</span>
           <span id="daily-target-calories" class="cal-number">-- kcal</span>
-          <small id="cal-breakdown-text">TMB + Gasto Activo Apple Watch - Déficit de Pérdida</small>
+          <small id="cal-breakdown-text">TMB + Gasto Entreno & Watch - Déficit de Pérdida</small>
         </div>
       </section>
 
@@ -130,7 +130,7 @@
       <!-- CREADOR DE RECETAS PROPIAS -->
       <section class="card custom-recipe-card">
         <h2>👨‍🍳 Crear Receta Propia & Analizador</h2>
-        <p class="modal-sub" style="margin-bottom: 10px;">Escribe una receta improvisada (de TikTok, casera, etc.) para que la app te analice cuándo comerla.</p>
+        <p class="modal-sub" style="margin-bottom: 10px;">Escribe una receta improvisada para analizar cuándo comerla.</p>
         
         <form id="create-recipe-form">
           <div class="form-group">
@@ -200,7 +200,7 @@
       </section>
     </main>
 
-    <!-- PESTAÑA 3: ENTRENOS, RUTINAS Y BUSCADOR -->
+    <!-- PESTAÑA 3: ENTRENOS, RUTINAS, KILOS Y VOLUMEN -->
     <main id="tab-fitness" class="tab-content">
       <section class="card search-card">
         <h2>🔍 Explorador de Actividades & Ejercicios</h2>
@@ -246,9 +246,16 @@
         <button id="btn-generate-routine" class="btn-primary" style="margin-top: 4px;">Actualizar Rutina Semanal</button>
       </section>
 
+      <!-- Distribución Semanal con Checks, Kilos y Series -->
       <section class="card routine-display-card">
-        <h2 id="routine-title">📅 Tu Plan Semanal (Toca series para editar o ✕ para borrar)</h2>
+        <h2 id="routine-title">📅 Tu Plan Semanal (Marca ejercicios y registra tus kilos)</h2>
         <div id="weekly-routine-container" class="routine-accordion"></div>
+      </section>
+
+      <!-- Gráfica de Progresión de Volumen / Cargas -->
+      <section class="card chart-card">
+        <h2>📈 Volumen de Carga Semanal (Kg Levantados)</h2>
+        <canvas id="volumeChart"></canvas>
       </section>
 
       <section class="card chart-card">
@@ -415,7 +422,7 @@
 
           <div class="form-group">
             <label for="notes">Notas adicionales:</label>
-            <input type="text" id="notes" placeholder="Ej: Comida, partido de pádel, sensaciones...">
+            <input type="text" id="notes" placeholder="Ej: Comida, sensaciones, gimnasio...">
           </div>
 
           <button type="submit" class="btn-primary">Guardar Datos</button>
@@ -451,7 +458,7 @@
     </div>
   </div>
 
-  <!-- MODAL ÚNICO DE CONFIGURACIÓN DEL PERFIL (CON APPLE WATCH) -->
+  <!-- MODAL DE CONFIGURACIÓN DEL PERFIL -->
   <div id="profile-modal" class="modal-overlay">
     <div class="modal-card">
       <h2>⚙️ Configuración del Perfil & Dispositivos</h2>
@@ -479,7 +486,6 @@
           <input type="number" step="0.1" id="prof-weight" required placeholder="Ej: 80.0">
         </div>
 
-        <!-- SELECTOR DE APPLE WATCH -->
         <div class="form-group">
           <label for="prof-has-watch">⌚ Dispositivo de Salud (Apple Watch):</label>
           <select id="prof-has-watch">
@@ -516,6 +522,6 @@
     </div>
   </div>
 
-  <script src="app.js?v=120"></script>
+  <script src="app.js?v=130"></script>
 </body>
 </html>

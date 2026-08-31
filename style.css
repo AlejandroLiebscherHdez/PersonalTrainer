@@ -764,3 +764,60 @@ input[type="range"] {
   gap: 8px;
   margin-top: 4px;
 }
+
+/* Registro de Kilos y Ejercicios */
+.exercise-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.exercise-kg-badge {
+  background: #1e293b;
+  color: var(--accent-blue);
+  border: 1px solid var(--card-border);
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.exercise-check-box {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent-green);
+  cursor: pointer;
+}
+
+.btn-complete-workout {
+  width: 100%;
+  background: #10b981;
+  color: white;
+  border: none;
+  padding: 10px;
+  border-radius: 10px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 10px;
+  transition: all 0.2s;
+}
+
+.btn-complete-workout.completed {
+  background: #0b0f19;
+  border: 1px solid var(--accent-green);
+  color: var(--accent-green);
+}
+
+.workout-stats-summary {
+  background: #0b0f19;
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}

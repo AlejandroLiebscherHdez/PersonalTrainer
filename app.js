@@ -15,6 +15,7 @@ function getAuthHeaders() {
 let cleanSince = localStorage.getItem('cleanSince') || Date.now();
 let stepsChartInstance = null;
 let bpmHealthChartInstance = null;
+let volumeChartInstance = null;
 
 let allLogs = [];
 let allHealth = [];
@@ -25,6 +26,10 @@ const savedProfileRaw = localStorage.getItem('userProfile');
 let userProfile = savedProfileRaw ? JSON.parse(savedProfileRaw) : null;
 let customRoutines = JSON.parse(localStorage.getItem('customUserRoutines')) || null;
 let customDietPlan = JSON.parse(localStorage.getItem('customUserDietPlan')) || null;
+
+// Estados de entrenamientos completados hoy
+let completedWorkouts = JSON.parse(localStorage.getItem('completedWorkouts_' + new Date().toISOString().split('T')[0])) || {};
+let checkedExercises = JSON.parse(localStorage.getItem('checkedExercises_' + new Date().toISOString().split('T')[0])) || {};
 
 let dailyChecklist = JSON.parse(localStorage.getItem('dailyChecklist_' + new Date().toISOString().split('T')[0])) || {
   water: false,
@@ -39,7 +44,7 @@ let dailyChecklist = JSON.parse(localStorage.getItem('dailyChecklist_' + new Dat
 let completedMeals = JSON.parse(localStorage.getItem('completedMeals_' + new Date().toISOString().split('T')[0])) || [];
 let currentAnalyzedRecipe = null;
 
-// Catálogo de Alimentos Españoles & Mercadona
+// Catálogo de Alimentos Mercadona
 const FOOD_DATABASE = [
   { name: "Queso Fresco Batido 0% Hacendado (200g)", type: "Proteína", kcal: 92, p: 16, c: 7, f: 0 },
   { name: "Pechuga de Pollo a la Plancha (180g)", type: "Proteína", kcal: 216, p: 43, c: 0, f: 4 },
@@ -94,38 +99,38 @@ const ACTIVITY_DATABASE = [
   { name: "Caminata Rápida (LISS)", type: "Cardio", kcal: "~250 kcal/h", bpm: "95-120 bpm" },
   { name: "Baloncesto", type: "Deporte", kcal: "~550 kcal/h", bpm: "130-170 bpm" },
   { name: "Natación", type: "Cardio", kcal: "~500 kcal/h", bpm: "125-160 bpm" },
-  { name: "Press de Banca Plano", type: "Pecho", sets: "4 x 8-10" },
-  { name: "Press Inclinado con Mancuernas", type: "Pecho Superior", sets: "4 x 10-12" },
-  { name: "Aperturas en Polea", type: "Pecho", sets: "3 x 12-15" },
-  { name: "Dominadas / Jalón al Pecho", type: "Espalda", sets: "4 x 8-10" },
-  { name: "Remo con Barra", type: "Espalda", sets: "4 x 8-10" },
-  { name: "Press Militar", type: "Hombro", sets: "4 x 8-10" },
-  { name: "Elevaciones Laterales", type: "Hombro Lateral", sets: "4 x 12-15" },
-  { name: "Sentadilla Trasera con Barra", type: "Pierna", sets: "4 x 8-10" },
-  { name: "Peso Muerto Rumano", type: "Isquios / Glúteos", sets: "4 x 8-10" },
-  { name: "Hip Thrust con Barra", type: "Glúteos", sets: "4 x 10-12" },
-  { name: "Curl Bíceps Barra Z", type: "Bíceps", sets: "3 x 10-12" },
-  { name: "Extensión Tríceps Polea", type: "Tríceps", sets: "4 x 12" },
-  { name: "Plancha Abdominal", type: "Core", sets: "3 x 45s" }
+  { name: "Press de Banca Plano", type: "Pecho", sets: "4 x 8-10", kg: "60" },
+  { name: "Press Inclinado con Mancuernas", type: "Pecho Superior", sets: "4 x 10-12", kg: "22" },
+  { name: "Aperturas en Polea", type: "Pecho", sets: "3 x 12-15", kg: "15" },
+  { name: "Dominadas / Jalón al Pecho", type: "Espalda", sets: "4 x 8-10", kg: "65" },
+  { name: "Remo con Barra", type: "Espalda", sets: "4 x 8-10", kg: "55" },
+  { name: "Press Militar", type: "Hombro", sets: "4 x 8-10", kg: "40" },
+  { name: "Elevaciones Laterales", type: "Hombro Lateral", sets: "4 x 12-15", kg: "10" },
+  { name: "Sentadilla Trasera con Barra", type: "Pierna", sets: "4 x 8-10", kg: "80" },
+  { name: "Peso Muerto Rumano", type: "Isquios / Glúteos", sets: "4 x 8-10", kg: "75" },
+  { name: "Hip Thrust con Barra", type: "Glúteos", sets: "4 x 10-12", kg: "90" },
+  { name: "Curl Bíceps Barra Z", type: "Bíceps", sets: "3 x 10-12", kg: "25" },
+  { name: "Extensión Tríceps Polea", type: "Tríceps", sets: "4 x 12", kg: "25" },
+  { name: "Plancha Abdominal", type: "Core", sets: "3 x 45s", kg: "0" }
 ];
 
 const ROUTINE_TEMPLATES = {
   fullbody: [
-    { day: "Lunes", focus: "Full Body A (Énfasis Empuje)", exercises: [["Sentadilla Trasera / Prensa", "4 x 8-10"], ["Press Banca Plano", "4 x 8-10"], ["Remo con Barra", "4 x 10"], ["Elevaciones Laterales", "3 x 15"], ["Plancha Abdominal", "3 x 45s"]] },
-    { day: "Miércoles", focus: "Full Body B (Énfasis Tracción)", exercises: [["Peso Muerto Rumano", "4 x 8-10"], ["Press Militar", "4 x 8-10"], ["Jalón al Pecho / Dominadas", "4 x 8-10"], ["Fondos / Flexiones", "3 x 12"], ["Curl Bíceps", "3 x 12"]] },
-    { day: "Viernes", focus: "Full Body C (Hipertrofia & Glúteo)", exercises: [["Hip Thrust con Barra", "4 x 10"], ["Sentadilla Búlgara", "3 x 10/pierna"], ["Press Inclinado", "4 x 10"], ["Remo Mancuerna", "3 x 10"], ["Extensión Tríceps", "3 x 12"]] }
+    { day: "Lunes", focus: "Full Body A (Énfasis Empuje)", exercises: [["Sentadilla Trasera / Prensa", "4 x 8-10", "80"], ["Press Banca Plano", "4 x 8-10", "65"], ["Remo con Barra", "4 x 10", "55"], ["Elevaciones Laterales", "3 x 15", "10"], ["Plancha Abdominal", "3 x 45s", "0"]] },
+    { day: "Miércoles", focus: "Full Body B (Énfasis Tracción)", exercises: [["Peso Muerto Rumano", "4 x 8-10", "75"], ["Press Militar", "4 x 8-10", "40"], ["Jalón al Pecho / Dominadas", "4 x 8-10", "65"], ["Fondos / Flexiones", "3 x 12", "0"], ["Curl Bíceps", "3 x 12", "25"]] },
+    { day: "Viernes", focus: "Full Body C (Hipertrofia & Glúteo)", exercises: [["Hip Thrust con Barra", "4 x 10", "90"], ["Sentadilla Búlgara", "3 x 10/pierna", "16"], ["Press Inclinado", "4 x 10", "22"], ["Remo Mancuerna", "3 x 10", "24"], ["Extensión Tríceps", "3 x 12", "25"]] }
   ],
   ppl: [
-    { day: "Día 1", focus: "Push (Pecho, Hombro, Tríceps)", exercises: [["Press Banca Plano", "4 x 8"], ["Press Inclinado Mancuernas", "4 x 10"], ["Press Militar", "3 x 10"], ["Elevaciones Laterales", "4 x 15"], ["Extensión Tríceps Polea", "3 x 12"]] },
-    { day: "Día 2", focus: "Pull (Espalda & Bíceps)", exercises: [["Jalón al Pecho / Dominadas", "4 x 8-10"], ["Remo Polea Baja", "4 x 10"], ["Pájaros Posterior", "3 x 15"], ["Curl Bíceps Barra Z", "3 x 10"], ["Curl Martillo", "3 x 12"]] },
-    { day: "Día 3", focus: "Legs (Pierna & Glúteos)", exercises: [["Sentadilla con Barra", "4 x 8"], ["Peso Muerto Rumano", "4 x 10"], ["Prensa 45°", "3 x 12"], ["Curl Femoral", "3 x 12"], ["Gemelos de Pie", "4 x 15"]] },
-    { day: "Día 4", focus: "Push / Pull Hipertrofia", exercises: [["Press con Mancuernas", "4 x 10"], ["Remo con Barra", "4 x 10"], ["Aperturas Polea", "3 x 12"], ["Bíceps + Tríceps", "3 x 12"]] }
+    { day: "Día 1", focus: "Push (Pecho, Hombro, Tríceps)", exercises: [["Press Banca Plano", "4 x 8", "70"], ["Press Inclinado Mancuernas", "4 x 10", "24"], ["Press Militar", "3 x 10", "40"], ["Elevaciones Laterales", "4 x 15", "10"], ["Extensión Tríceps Polea", "3 x 12", "25"]] },
+    { day: "Día 2", focus: "Pull (Espalda & Bíceps)", exercises: [["Jalón al Pecho / Dominadas", "4 x 8-10", "65"], ["Remo Polea Baja", "4 x 10", "55"], ["Pájaros Posterior", "3 x 15", "8"], ["Curl Bíceps Barra Z", "3 x 10", "25"], ["Curl Martillo", "3 x 12", "14"]] },
+    { day: "Día 3", focus: "Legs (Pierna & Glúteos)", exercises: [["Sentadilla con Barra", "4 x 8", "85"], ["Peso Muerto Rumano", "4 x 10", "80"], ["Prensa 45°", "3 x 12", "140"], ["Curl Femoral", "3 x 12", "45"], ["Gemelos de Pie", "4 x 15", "50"]] },
+    { day: "Día 4", focus: "Push / Pull Hipertrofia", exercises: [["Press con Mancuernas", "4 x 10", "26"], ["Remo con Barra", "4 x 10", "60"], ["Aperturas Polea", "3 x 12", "15"], ["Bíceps + Tríceps", "3 x 12", "20"]] }
   ],
   torso_pierna: [
-    { day: "Lunes", focus: "Torso Fuerza", exercises: [["Press Banca Plano", "4 x 6-8"], ["Remo con Barra", "4 x 6-8"], ["Press Militar", "3 x 8"], ["Jalón al Pecho", "3 x 10"]] },
-    { day: "Martes", focus: "Pierna Fuerza", exercises: [["Sentadilla con Barra", "4 x 6-8"], ["Peso Muerto Rumano", "4 x 8"], ["Prensa", "3 x 10"], ["Gemelos", "4 x 12"]] },
-    { day: "Jueves", focus: "Torso Hipertrofia", exercises: [["Press Inclinado Mancuernas", "4 x 10-12"], ["Remo Polea", "4 x 10-12"], ["Elevaciones Laterales", "4 x 15"], ["Bíceps / Tríceps", "3 x 12"]] },
-    { day: "Viernes", focus: "Pierna Hipertrofia", exercises: [["Sentadilla Búlgara", "3 x 10/pierna"], ["Hip Thrust", "4 x 10-12"], ["Curl Femoral", "4 x 12"], ["Abdomen Polea", "4 x 15"]] }
+    { day: "Lunes", focus: "Torso Fuerza", exercises: [["Press Banca Plano", "4 x 6-8", "75"], ["Remo con Barra", "4 x 6-8", "65"], ["Press Militar", "3 x 8", "45"], ["Jalón al Pecho", "3 x 10", "70"]] },
+    { day: "Martes", focus: "Pierna Fuerza", exercises: [["Sentadilla con Barra", "4 x 6-8", "90"], ["Peso Muerto Rumano", "4 x 8", "85"], ["Prensa", "3 x 10", "150"], ["Gemelos", "4 x 12", "60"]] },
+    { day: "Jueves", focus: "Torso Hipertrofia", exercises: [["Press Inclinado Mancuernas", "4 x 10-12", "24"], ["Remo Polea", "4 x 10-12", "55"], ["Elevaciones Laterales", "4 x 15", "10"], ["Bíceps / Tríceps", "3 x 12", "22"]] },
+    { day: "Viernes", focus: "Pierna Hipertrofia", exercises: [["Sentadilla Búlgara", "3 x 10/pierna", "18"], ["Hip Thrust", "4 x 10-12", "100"], ["Curl Femoral", "4 x 12", "45"], ["Abdomen Polea", "4 x 15", "30"]] }
   ]
 };
 
@@ -139,7 +144,10 @@ document.addEventListener('DOMContentLoaded', () => {
       const target = document.getElementById(btn.dataset.tab);
       if (target) target.classList.add('active');
 
-      if (btn.dataset.tab === 'tab-fitness' && stepsChartInstance) setTimeout(() => stepsChartInstance.resize(), 100);
+      if (btn.dataset.tab === 'tab-fitness') {
+        if (stepsChartInstance) setTimeout(() => stepsChartInstance.resize(), 100);
+        renderVolumeChart();
+      }
       if (btn.dataset.tab === 'tab-health' && bpmHealthChartInstance) setTimeout(() => bpmHealthChartInstance.resize(), 100);
       if (btn.dataset.tab === 'tab-diet') {
         renderDietMeals();
@@ -162,7 +170,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initApp();
 });
 
-// Sincronización del Perfil con Supabase
+// Sincronización del Perfil
 async function syncProfileFromCloud() {
   if (!authSession || !authSession.user) return;
   try {
@@ -227,7 +235,7 @@ async function saveProfileToCloud() {
   }
 }
 
-// Creador y Analizador de Recetas
+// Creador de Recetas
 function setupCustomRecipeCreator() {
   const form = document.getElementById('create-recipe-form');
   const box = document.getElementById('recipe-analysis-box');
@@ -254,24 +262,24 @@ function setupCustomRecipeCreator() {
     if (isJunk) {
       icon = "⚠️";
       suggestedMeal = "Capricho puntual / Cheat Meal (Post-Entreno)";
-      evaluation = `Contiene azúcares simples y grasas saturadas con baja densidad nutricional. Consúmelo cerca de un entreno de alta intensidad o en la merienda para rellenar glucógeno muscular y evitar picos de insulina en la cena.`;
+      evaluation = `Contiene azúcares simples y grasas saturadas. Consúmelo cerca de un entreno intenso para recargar glucógeno sin ganar grasa.`;
     } else {
-      const isBreakfast = lower.includes('avena') || lower.includes('huevo') || lower.includes('claras') || lower.includes('tostada') || lower.includes('fruta') || lower.includes('yogur') || lower.includes('leche') || lower.includes('tortitas');
-      const isHeavyLunch = lower.includes('pollo') || lower.includes('arroz') || lower.includes('pasta') || lower.includes('ternera') || lower.includes('patata') || lower.includes('legumbres') || lower.includes('lentejas');
-      const isLightDinner = lower.includes('ensalada') || lower.includes('pescado') || lower.includes('merluza') || lower.includes('salmón') || lower.includes('verdura') || lower.includes('pavo') || lower.includes('champiñones');
+      const isBreakfast = lower.includes('avena') || lower.includes('huevo') || lower.includes('claras') || lower.includes('tostada') || lower.includes('fruta') || lower.includes('yogur') || lower.includes('leche');
+      const isHeavyLunch = lower.includes('pollo') || lower.includes('arroz') || lower.includes('pasta') || lower.includes('ternera') || lower.includes('patata') || lower.includes('legumbres');
+      const isLightDinner = lower.includes('ensalada') || lower.includes('pescado') || lower.includes('merluza') || lower.includes('salmón') || lower.includes('verdura');
 
       if (isBreakfast && kcal <= 500) {
         icon = "🥞";
         suggestedMeal = "Desayuno o Merienda Energética";
-        evaluation = `Excelente combinación de energía matutina y carbohidratos complejos para rendir durante el día.`;
+        evaluation = `Excelente combinación de energía matutina y carbohidratos complejos.`;
       } else if (isHeavyLunch && kcal >= 480) {
         icon = "🍗";
         suggestedMeal = "Almuerzo Principal";
-        evaluation = `Plato saciante y completo con alta densidad calórica y aminoácidos para recuperación muscular.`;
+        evaluation = `Plato saciante y completo con alta densidad calórica y aminoácidos.`;
       } else if (isLightDinner) {
         icon = "🥗";
         suggestedMeal = "Cena Ligera o Almuerzo";
-        evaluation = `Comida limpia con buen volumen y fácil digestión para favorecer el descanso nocturno.`;
+        evaluation = `Comida limpia y fácil de digerir para favorecer el descanso nocturno.`;
       } else {
         icon = "🍽️";
         suggestedMeal = kcal > 500 ? "Almuerzo" : "Merienda / Cena";
@@ -280,7 +288,6 @@ function setupCustomRecipeCreator() {
     }
 
     const recommendation = `${icon} <strong>Análisis:</strong> Recomendado como <strong>${suggestedMeal}</strong>.<br><small style="color: #94a3b8;">${evaluation}</small>`;
-
     currentAnalyzedRecipe = { title, ingredients, kcal, protein, recommendation, isJunk };
 
     txt.innerHTML = recommendation;
@@ -290,13 +297,7 @@ function setupCustomRecipeCreator() {
       await fetch(`${SUPABASE_URL}/rest/v1/user_recipes`, {
         method: "POST",
         headers: getAuthHeaders(),
-        body: JSON.stringify({
-          title,
-          ingredients,
-          kcal,
-          protein,
-          recommendation
-        })
+        body: JSON.stringify({ title, ingredients, kcal, protein, recommendation })
       });
     } catch (err) {
       console.error("Error guardando receta:", err);
@@ -348,7 +349,7 @@ function renderUserRecipes() {
   if (!container) return;
 
   if (!allUserRecipes || allUserRecipes.length === 0) {
-    container.innerHTML = '<p class="empty-msg" style="color: var(--text-muted); font-size: 0.85rem;">No tienes recetas guardadas todavía. ¡Crea una arriba!</p>';
+    container.innerHTML = '<p class="empty-msg" style="color: var(--text-muted); font-size: 0.85rem;">No tienes recetas guardadas todavía.</p>';
     return;
   }
 
@@ -679,7 +680,7 @@ window.selectFoodToMeal = function(name, kcal) {
   document.getElementById('food-search-input').value = '';
 };
 
-// Rutinas
+// Rutinas con Kilos, Checks y Tonelaje
 function setupRoutineSystem() {
   const selectFocus = document.getElementById('workout-focus');
   const selectDays = document.getElementById('workout-days-week');
@@ -700,15 +701,19 @@ function setupRoutineSystem() {
 
     let list = JSON.parse(JSON.stringify(base));
     while (list.length < daysCount) {
-      list.push({ day: `Día ${list.length + 1}`, focus: "Cardio / Pádel / Fútbol", exercises: [["Pádel o Deporte Libre", "60 min"], ["Estiramientos", "10 min"]] });
+      list.push({ day: `Día ${list.length + 1}`, focus: "Cardio / Pádel / Fútbol", exercises: [["Pádel o Deporte Libre", "60 min", "0"], ["Estiramientos", "10 min", "0"]] });
     }
     customRoutines = list.slice(0, daysCount);
     localStorage.setItem('customUserRoutines', JSON.stringify(customRoutines));
     renderCurrentRoutine();
+    renderVolumeChart();
   }
 
   if (!customRoutines) generateNewRoutine();
-  else renderCurrentRoutine();
+  else {
+    renderCurrentRoutine();
+    renderVolumeChart();
+  }
 
   if (btnGen) btnGen.addEventListener('click', generateNewRoutine);
 }
@@ -717,27 +722,112 @@ function renderCurrentRoutine() {
   const container = document.getElementById('weekly-routine-container');
   if (!container || !customRoutines) return;
 
-  container.innerHTML = customRoutines.map((r, dIdx) => `
-    <div class="routine-day-card">
-      <div class="routine-day-header">
-        <span class="routine-day-name">${r.day}</span>
-        <span class="routine-day-focus">${r.focus}</span>
+  const todayKey = new Date().toISOString().split('T')[0];
+
+  container.innerHTML = customRoutines.map((r, dIdx) => {
+    const isDone = !!completedWorkouts[dIdx];
+    
+    // Cálculo de volumen del día
+    let dayTonnage = 0;
+    r.exercises.forEach((ex, eIdx) => {
+      const kg = Number(ex[2] || 0);
+      const setsStr = String(ex[1]);
+      const setsMatch = setsStr.match(/(\d+)\s*x\s*(\d+)/i);
+      if (setsMatch && kg > 0) {
+        const totalReps = Number(setsMatch[1]) * Number(setsMatch[2]);
+        dayTonnage += totalReps * kg;
+      }
+    });
+
+    return `
+      <div class="routine-day-card ${isDone ? 'completed-workout' : ''}">
+        <div class="routine-day-header">
+          <span class="routine-day-name">${r.day}</span>
+          <span class="routine-day-focus">${r.focus}</span>
+        </div>
+        <div class="workout-stats-summary">
+          <span>Volumen Total: <strong>${dayTonnage.toLocaleString()} kg</strong></span>
+          <span>Gasto Estimado: <strong>~${Math.round(200 + (dayTonnage * 0.015))} kcal</strong></span>
+        </div>
+        <ul class="exercise-list">
+          ${r.exercises.map((ex, eIdx) => {
+            const exKey = `${dIdx}_${eIdx}`;
+            const isChecked = !!checkedExercises[exKey];
+            const kgVal = ex[2] !== undefined ? ex[2] : "0";
+            return `
+              <li class="exercise-item">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <input type="checkbox" class="exercise-check-box" ${isChecked ? 'checked' : ''} onchange="toggleExerciseCheck(${dIdx}, ${eIdx})">
+                  <span style="${isChecked ? 'text-decoration: line-through; color: #94a3b8;' : ''}">${ex[0]}</span>
+                </div>
+                <div class="exercise-meta-row">
+                  <span class="exercise-sets" onclick="editExerciseSets(${dIdx}, ${eIdx})">${ex[1]} ✏️</span>
+                  <span class="exercise-kg-badge" onclick="editExerciseKg(${dIdx}, ${eIdx})">🏋️ ${kgVal} kg</span>
+                  <button class="btn-delete-ex" title="Eliminar ejercicio" onclick="deleteExercise(${dIdx}, ${eIdx})">✕</button>
+                </div>
+              </li>
+            `;
+          }).join('')}
+        </ul>
+        <button class="btn-add-ex" onclick="addNewExerciseToDay(${dIdx})">+ Añadir ejercicio a ${r.day}</button>
+        <button class="btn-complete-workout ${isDone ? 'completed' : ''}" onclick="toggleWorkoutCompleted(${dIdx}, ${dayTonnage})">
+          ${isDone ? '✓ Sesión Completada (+kcal añadidas)' : '✓ Completar Sesión de Hoy'}
+        </button>
       </div>
-      <ul class="exercise-list">
-        ${r.exercises.map((ex, eIdx) => `
-          <li class="exercise-item">
-            <span>${ex[0]}</span>
-            <div>
-              <span class="exercise-sets" onclick="editExerciseSets(${dIdx}, ${eIdx})">${ex[1]} ✏️</span>
-              <button class="btn-delete-ex" title="Eliminar ejercicio" onclick="deleteExercise(${dIdx}, ${eIdx})">✕</button>
-            </div>
-          </li>
-        `).join('')}
-      </ul>
-      <button class="btn-add-ex" onclick="addNewExerciseToDay(${dIdx})">+ Añadir ejercicio a ${r.day}</button>
-    </div>
-  `).join('');
+    `;
+  }).join('');
 }
+
+window.toggleExerciseCheck = function(dIdx, eIdx) {
+  const todayKey = 'checkedExercises_' + new Date().toISOString().split('T')[0];
+  const exKey = `${dIdx}_${eIdx}`;
+  checkedExercises[exKey] = !checkedExercises[exKey];
+  localStorage.setItem(todayKey, JSON.stringify(checkedExercises));
+  renderCurrentRoutine();
+};
+
+window.toggleWorkoutCompleted = async function(dIdx, tonnage) {
+  const todayKey = 'completedWorkouts_' + new Date().toISOString().split('T')[0];
+  const isDone = !completedWorkouts[dIdx];
+  completedWorkouts[dIdx] = isDone;
+  localStorage.setItem(todayKey, JSON.stringify(completedWorkouts));
+
+  const gymBurnKcal = Math.round(220 + (tonnage * 0.015));
+
+  if (isDone) {
+    // Subir entrenamiento a Supabase para sumar calorías
+    try {
+      await fetch(`${SUPABASE_URL}/rest/v1/workouts`, {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          workout_type: `Gimnasio: ${customRoutines[dIdx].day} (${customRoutines[dIdx].focus})`,
+          active_calories: gymBurnKcal,
+          avg_bpm: 125
+        })
+      });
+      alert(`¡Sesión completada! Se han calculado ${gymBurnKcal} kcal quemadas y sumadas a tu balance de hoy.`);
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  loadData();
+  renderCurrentRoutine();
+  renderVolumeChart();
+};
+
+window.editExerciseKg = function(dayIdx, exIdx) {
+  const current = customRoutines[dayIdx].exercises[exIdx];
+  const currentKg = current[2] || "0";
+  const newKg = prompt(`Introduce los kilos levantados para "${current[0]}":`, currentKg);
+  if (newKg !== null && !isNaN(newKg)) {
+    customRoutines[dayIdx].exercises[exIdx][2] = String(Number(newKg));
+    localStorage.setItem('customUserRoutines', JSON.stringify(customRoutines));
+    renderCurrentRoutine();
+    renderVolumeChart();
+  }
+};
 
 window.deleteExercise = function(dayIdx, exIdx) {
   const name = customRoutines[dayIdx].exercises[exIdx][0];
@@ -745,6 +835,7 @@ window.deleteExercise = function(dayIdx, exIdx) {
     customRoutines[dayIdx].exercises.splice(exIdx, 1);
     localStorage.setItem('customUserRoutines', JSON.stringify(customRoutines));
     renderCurrentRoutine();
+    renderVolumeChart();
   }
 };
 
@@ -755,17 +846,64 @@ window.editExerciseSets = function(dayIdx, exIdx) {
     customRoutines[dayIdx].exercises[exIdx][1] = newSets.trim();
     localStorage.setItem('customUserRoutines', JSON.stringify(customRoutines));
     renderCurrentRoutine();
+    renderVolumeChart();
   }
 };
 
 window.addNewExerciseToDay = function(dayIdx) {
-  const name = prompt("Nombre del ejercicio o actividad (Ej: Pádel, Curl Martillo, Prensa...):");
+  const name = prompt("Nombre del ejercicio (Ej: Press Banca, Sentadilla, Pádel...):");
   if (!name) return;
-  const sets = prompt("Series y repeticiones (Ej: 4 x 12, 60 min, etc.):", "3 x 10");
-  customRoutines[dayIdx].exercises.push([name, sets || "3 x 10"]);
+  const sets = prompt("Series y repeticiones (Ej: 4 x 10):", "4 x 10");
+  const kg = prompt("Kilos a levantar (kg):", "20");
+  customRoutines[dayIdx].exercises.push([name, sets || "4 x 10", kg || "0"]);
   localStorage.setItem('customUserRoutines', JSON.stringify(customRoutines));
   renderCurrentRoutine();
+  renderVolumeChart();
 };
+
+// Gráfica de Volumen Semanal (Tonelaje Levantado)
+function renderVolumeChart() {
+  const canvas = document.getElementById('volumeChart');
+  if (!canvas || typeof Chart === 'undefined' || !customRoutines) return;
+
+  const ctx = canvas.getContext('2d');
+  const labels = customRoutines.map(r => r.day);
+  const volumeData = customRoutines.map(r => {
+    let dayTonnage = 0;
+    r.exercises.forEach(ex => {
+      const kg = Number(ex[2] || 0);
+      const setsStr = String(ex[1]);
+      const setsMatch = setsStr.match(/(\d+)\s*x\s*(\d+)/i);
+      if (setsMatch && kg > 0) {
+        dayTonnage += (Number(setsMatch[1]) * Number(setsMatch[2])) * kg;
+      }
+    });
+    return dayTonnage;
+  });
+
+  if (volumeChartInstance) volumeChartInstance.destroy();
+
+  volumeChartInstance = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Kg Levantados',
+        data: volumeData,
+        backgroundColor: '#10b981',
+        borderRadius: 8
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        y: { grid: { color: '#1f2a44' }, ticks: { color: '#94a3b8' } },
+        x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
+      },
+      plugins: { legend: { display: false } }
+    }
+  });
+}
 
 function setupSearchEngine() {
   const input = document.getElementById('activity-search-input');
@@ -781,7 +919,7 @@ function setupSearchEngine() {
       results.innerHTML = `<div class="search-item"><span>Sin resultados para "${val}"</span></div>`;
     } else {
       results.innerHTML = matches.map(m => `
-        <div class="search-item" onclick="selectSearchActivity('${m.name}', '${m.sets || m.kcal}')">
+        <div class="search-item" onclick="selectSearchActivity('${m.name}', '${m.sets || m.kcal}', '${m.kg || "0"}')">
           <div>
             <strong>${m.name}</strong><br>
             <small style="color: #94a3b8;">${m.type}</small>
@@ -800,14 +938,15 @@ function setupSearchEngine() {
   });
 }
 
-window.selectSearchActivity = function(name, detail) {
-  const dayIdx = prompt(`¿A qué día de tu rutina deseas añadir "${name}"? (Ej: 1 para Día 1, 2 para Día 2, etc.):`, "1");
+window.selectSearchActivity = function(name, detail, kg) {
+  const dayIdx = prompt(`¿A qué día deseas añadir "${name}"? (Ej: 1 para Día 1, 2 para Día 2...):`, "1");
   if (dayIdx && customRoutines) {
     const idx = parseInt(dayIdx) - 1;
     if (customRoutines[idx]) {
-      customRoutines[idx].exercises.push([name, detail || "3 x 10"]);
+      customRoutines[idx].exercises.push([name, detail || "4 x 10", kg || "0"]);
       localStorage.setItem('customUserRoutines', JSON.stringify(customRoutines));
       renderCurrentRoutine();
+      renderVolumeChart();
       alert(`¡${name} añadido al ${customRoutines[idx].day}!`);
     }
   }
@@ -1105,38 +1244,41 @@ function renderCoachEngine() {
   const daysTotal = userProfile.weeks * 7;
   const dailyDeficit = Math.round(totalDeficitNeeded / daysTotal);
 
-  let totalBurn = 0;
+  const todayDateStr = new Date().toISOString().split('T')[0];
+  const todayHealth = Array.isArray(allHealth) ? allHealth.find(h => h.created_at.startsWith(todayDateStr)) : null;
+  const todayWorkouts = Array.isArray(allWorkouts) ? allWorkouts.filter(w => w.created_at.startsWith(todayDateStr)) : [];
+
+  const todaySteps = todayHealth && todayHealth.steps ? Number(todayHealth.steps) : 0;
+  const stepsBurn = Math.round(todaySteps * 0.04);
+  const workoutBurn = todayWorkouts.reduce((acc, w) => acc + (w.active_calories ? Number(w.active_calories) : 250), 0);
+  const totalBurn = stepsBurn + workoutBurn;
+
+  let finalCalorieTarget;
   let adviceHTML = '';
 
   if (userProfile.hasWatch) {
-    // Con Apple Watch
-    const todayDateStr = new Date().toISOString().split('T')[0];
-    const todayHealth = Array.isArray(allHealth) ? allHealth.find(h => h.created_at.startsWith(todayDateStr)) : null;
-    const todayWorkouts = Array.isArray(allWorkouts) ? allWorkouts.filter(w => w.created_at.startsWith(todayDateStr)) : [];
-
-    const todaySteps = todayHealth && todayHealth.steps ? Number(todayHealth.steps) : 0;
-    const stepsBurn = Math.round(todaySteps * 0.04);
-    const workoutBurn = todayWorkouts.reduce((acc, w) => acc + (w.active_calories ? Number(w.active_calories) : 250), 0);
-    totalBurn = stepsBurn + (todayWorkouts.length > 0 ? workoutBurn : 0);
-
     const maintenanceBase = Math.round(bmr * 1.2);
-    const finalCalorieTarget = Math.max(1400, maintenanceBase + totalBurn - dailyDeficit);
+    finalCalorieTarget = Math.max(1400, maintenanceBase + totalBurn - dailyDeficit);
     targetCalEl.innerText = `${finalCalorieTarget} kcal`;
 
     if (todayWorkouts.length > 0) {
-      adviceHTML = `<p>🔥 <strong>¡Día de alto gasto!</strong> Registraste entrenamientos en tu Apple Watch (+${workoutBurn} kcal). Tu margen sube a <strong>${finalCalorieTarget} kcal</strong>.</p>`;
+      adviceHTML = `<p>🔥 <strong>¡Día de entrenamiento registrado!</strong> Gasto total de actividad: +${totalBurn} kcal (Fuerza/Apple Watch). Tu objetivo sube a <strong>${finalCalorieTarget} kcal</strong>.</p>`;
     } else if (todaySteps > 8000) {
-      adviceHTML = `<p>🚶‍♂️ <strong>Gran volumen de pasos:</strong> Llevas ${todaySteps.toLocaleString()} pasos hoy (+${stepsBurn} kcal). Mantente en <strong>${finalCalorieTarget} kcal</strong>.</p>`;
+      adviceHTML = `<p>🚶‍♂️ <strong>Gran volumen de pasos:</strong> Llevas ${todaySteps.toLocaleString()} pasos (+${stepsBurn} kcal). Mantente en <strong>${finalCalorieTarget} kcal</strong>.</p>`;
     } else {
       adviceHTML = `<p>🎯 <strong>Día de recuperación:</strong> Para cumplir tu meta de perder <strong>${userProfile.targetLossKg} kg en ${userProfile.weeks} semanas</strong>, consume <strong>${finalCalorieTarget} kcal</strong>.</p>`;
     }
   } else {
-    // Sin Apple Watch (Modo Estándar / Tu amigo)
-    const maintenanceBase = Math.round(bmr * 1.375);
-    const finalCalorieTarget = Math.max(1400, maintenanceBase - dailyDeficit);
+    // Modo Estándar sin reloj
+    const maintenanceBase = Math.round(bmr * 1.35);
+    finalCalorieTarget = Math.max(1400, maintenanceBase + workoutBurn - dailyDeficit);
     targetCalEl.innerText = `${finalCalorieTarget} kcal`;
 
-    adviceHTML = `<p>🎯 <strong>Plan Estándar Activo:</strong> Tu presupuesto calórico diario calculado para perder <strong>${userProfile.targetLossKg} kg en ${userProfile.weeks} semanas</strong> es de <strong>${finalCalorieTarget} kcal</strong>. Cumple con tu rutina del día en la pestaña <em>Rutinas</em>.</p>`;
+    if (todayWorkouts.length > 0) {
+      adviceHTML = `<p>🔥 <strong>¡Entrenamiento de fuerza completado!</strong> Has sumado +${workoutBurn} kcal de gasto activo. Tu margen calórico para hoy es de <strong>${finalCalorieTarget} kcal</strong>.</p>`;
+    } else {
+      adviceHTML = `<p>🎯 <strong>Plan Estándar Activo:</strong> Tu objetivo son <strong>${finalCalorieTarget} kcal</strong>. Marca tus ejercicios completados en <em>Rutinas</em> para registrar tu gasto.</p>`;
+    }
   }
 
   container.innerHTML = adviceHTML;
@@ -1147,20 +1289,18 @@ function updateDashboardMetrics() {
   const stepsEl = document.getElementById('metric-today-steps');
   const burnEl = document.getElementById('metric-today-burn');
 
+  const todayDateStr = new Date().toISOString().split('T')[0];
+  const todayHealth = Array.isArray(allHealth) ? allHealth.find(h => h.created_at.startsWith(todayDateStr)) : null;
+  const todayWorkouts = Array.isArray(allWorkouts) ? allWorkouts.filter(w => w.created_at.startsWith(todayDateStr)) : [];
+  const totalWkBurn = todayWorkouts.reduce((acc, w) => acc + (w.active_calories ? Number(w.active_calories) : 250), 0);
+
+  if (burnEl) burnEl.innerText = `${totalWkBurn} kcal`;
+
   if (!userProfile || !userProfile.hasWatch) {
     if (bpmEl) bpmEl.innerText = "N/A (Sin reloj)";
     if (stepsEl) stepsEl.innerText = "Modo manual";
-    if (burnEl) burnEl.innerText = "--";
   } else {
-    const todayDateStr = new Date().toISOString().split('T')[0];
-    const todayHealth = Array.isArray(allHealth) ? allHealth.find(h => h.created_at.startsWith(todayDateStr)) : null;
-    const todayWorkouts = Array.isArray(allWorkouts) ? allWorkouts.filter(w => w.created_at.startsWith(todayDateStr)) : [];
-
     if (stepsEl) stepsEl.innerText = todayHealth && todayHealth.steps ? Number(todayHealth.steps).toLocaleString() : '0';
-    if (burnEl) {
-      const totalWkBurn = todayWorkouts.reduce((acc, w) => acc + (w.active_calories ? Number(w.active_calories) : 250), 0);
-      burnEl.innerText = `${totalWkBurn} kcal`;
-    }
     if (bpmEl && Array.isArray(allHealth) && allHealth.length > 0) {
       bpmEl.innerText = `${allHealth[allHealth.length - 1].resting_bpm || '--'} bpm`;
     }
@@ -1240,8 +1380,8 @@ function renderWorkoutsList() {
     return `
       <div class="reading-pill">
         <div>
-          <strong>🏃 ${w.workout_type || 'Sesión Apple Watch'}</strong><br>
-          <small style="color: #94a3b8;">${date}</small>
+          <strong>🏃 ${w.workout_type || 'Sesión Registrada'}</strong><br>
+          <small style="color: #94a3b8;">${date} • 🔥 +${w.active_calories || 250} kcal</small>
         </div>
         <strong style="color: #38bdf8;">❤️ ${w.avg_bpm ? w.avg_bpm + ' bpm' : 'OK'}</strong>
       </div>
