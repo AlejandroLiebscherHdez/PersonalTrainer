@@ -19,6 +19,7 @@ let bpmHealthChartInstance = null;
 let allLogs = [];
 let allHealth = [];
 let allWorkouts = [];
+let allUserRecipes = [];
 
 const savedProfileRaw = localStorage.getItem('userProfile');
 let userProfile = savedProfileRaw ? JSON.parse(savedProfileRaw) : null;
@@ -36,6 +37,7 @@ let dailyChecklist = JSON.parse(localStorage.getItem('dailyChecklist_' + new Dat
 };
 
 let completedMeals = JSON.parse(localStorage.getItem('completedMeals_' + new Date().toISOString().split('T')[0])) || [];
+let currentAnalyzedRecipe = null;
 
 // Catálogo de Alimentos Españoles & Mercadona
 const FOOD_DATABASE = [
@@ -139,7 +141,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (btn.dataset.tab === 'tab-fitness' && stepsChartInstance) setTimeout(() => stepsChartInstance.resize(), 100);
       if (btn.dataset.tab === 'tab-health' && bpmHealthChartInstance) setTimeout(() => bpmHealthChartInstance.resize(), 100);
-      if (btn.dataset.tab === 'tab-diet') renderDietMeals();
+      if (btn.dataset.tab === 'tab-diet') {
+        renderDietMeals();
+        renderUserRecipes();
+      }
     });
   });
 
@@ -151,10 +156,160 @@ document.addEventListener('DOMContentLoaded', () => {
   setupRoutineSystem();
   setupSearchEngine();
   setupFoodSearchEngine();
+  setupCustomRecipeCreator();
   setupDietSection();
   checkWeighReminder();
   initApp();
 });
+
+// Creador de Recetas Inteligente con Análisis Nutricional
+function setupCustomRecipeCreator() {
+  const form = document.getElementById('create-recipe-form');
+  const box = document.getElementById('recipe-analysis-box');
+  const txt = document.getElementById('analysis-text');
+  const btnAdd = document.getElementById('btn-add-recipe-to-diet');
+  const btnClose = document.getElementById('btn-close-analysis');
+
+  if (!form) return;
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const title = document.getElementById('recipe-title').value.trim();
+    const ingredients = document.getElementById('recipe-ingredients').value.trim();
+    const kcal = Number(document.getElementById('recipe-kcal').value);
+    const protein = Number(document.getElementById('recipe-protein').value) || 20;
+
+    // Análisis inteligente según ingredientes y calorías
+    let suggestedMeal = "Almuerzo o Cena";
+    let reason = "Equilibrada en macros y densidad media.";
+
+    const lowerIng = ingredients.toLowerCase();
+    if (lowerIng.includes('avena') || lowerIng.includes('huevo') || lowerIng.includes('tostada') || lowerIng.includes('fruta') || lowerIng.includes('yogur') || kcal < 450) {
+      suggestedMeal = "Desayuno o Merienda";
+      reason = "Aporte de energía rápida, carbohidratos complejos o digestión ligera.";
+    }
+    if (lowerIng.includes('pollo') || lowerIng.includes('arroz') || lowerIng.includes('pasta') || lowerIng.includes('ternera') || lowerIng.includes('patata') || kcal >= 500) {
+      suggestedMeal = "Almuerzo Principal";
+      reason = "Plato contundente, excelente para recuperación post-entrenamiento.";
+    }
+    if (lowerIng.includes('ensalada') || lowerIng.includes('pescado') || lowerIng.includes('merluza') || lowerIng.includes('verdura') || (lowerIng.includes('pollo') && lowerIng.includes('lechuga'))) {
+      suggestedMeal = "Cena Ligera o Almuerzo";
+      reason = "Alta saciedad con bajo impacto glucémico para optimizar el descanso nocturno.";
+    }
+
+    const recommendation = `🎯 <strong>Recomendación del Coach:</strong> Esta receta de <strong>${kcal} kcal</strong> encaja idealmente como <strong>${suggestedMeal}</strong>. (${reason})`;
+
+    currentAnalyzedRecipe = { title, ingredients, kcal, protein, recommendation };
+
+    txt.innerHTML = recommendation;
+    box.style.display = 'block';
+
+    // Guardar en Supabase y localmente
+    try {
+      await fetch(`${SUPABASE_URL}/rest/v1/user_recipes`, {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          title,
+          ingredients,
+          kcal,
+          protein,
+          recommendation
+        })
+      });
+    } catch (err) {
+      console.error("Error guardando receta:", err);
+    }
+
+    form.reset();
+    loadUserRecipes();
+  });
+
+  if (btnAdd) {
+    btnAdd.addEventListener('click', () => {
+      if (!currentAnalyzedRecipe || !customDietPlan) return;
+      const mealNum = prompt(`¿A qué comida deseas incorporar "${currentAnalyzedRecipe.title}" (${currentAnalyzedRecipe.kcal} kcal)?\n1: Desayuno\n2: Almuerzo\n3: Merienda\n4: Cena`, "2");
+      if (mealNum) {
+        const idx = parseInt(mealNum) - 1;
+        if (customDietPlan[idx]) {
+          customDietPlan[idx].items.push(`${currentAnalyzedRecipe.title} (${currentAnalyzedRecipe.ingredients})`);
+          customDietPlan[idx].kcal = currentAnalyzedRecipe.kcal;
+          localStorage.setItem('customUserDietPlan', JSON.stringify(customDietPlan));
+          renderDietMeals();
+          alert(`¡${currentAnalyzedRecipe.title} añadida con éxito a tu ${customDietPlan[idx].title}!`);
+        }
+      }
+      box.style.display = 'none';
+    });
+  }
+
+  if (btnClose) {
+    btnClose.addEventListener('click', () => { box.style.display = 'none'; });
+  }
+}
+
+async function loadUserRecipes() {
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/user_recipes?select=*&order=created_at.desc`, { headers: getAuthHeaders() });
+    allUserRecipes = await res.json();
+    if (!Array.isArray(allUserRecipes)) allUserRecipes = [];
+    renderUserRecipes();
+  } catch (err) {
+    console.error("Error cargando recetas:", err);
+  }
+}
+
+function renderUserRecipes() {
+  const container = document.getElementById('user-recipes-list');
+  if (!container) return;
+
+  if (!allUserRecipes || allUserRecipes.length === 0) {
+    container.innerHTML = '<p class="empty-msg" style="color: var(--text-muted); font-size: 0.85rem;">No tienes recetas guardadas todavía. ¡Crea una arriba!</p>';
+    return;
+  }
+
+  container.innerHTML = allUserRecipes.map((r, idx) => `
+    <div class="recipe-saved-item">
+      <div class="recipe-saved-header">
+        <strong style="color: var(--accent-blue); font-size: 0.92rem;">${r.title}</strong>
+        <span style="color: var(--accent-green); font-weight: 700; font-size: 0.85rem;">${r.kcal} kcal</span>
+      </div>
+      <p style="font-size: 0.82rem; color: var(--text-muted);"><strong>Ingredientes:</strong> ${r.ingredients}</p>
+      <small style="color: #94a3b8; font-size: 0.76rem;">${r.recommendation || ''}</small>
+      <div class="recipe-saved-actions">
+        <button class="btn-meal-action" onclick="addSavedRecipeToMenu(${idx})">+ Añadir al Menú de Hoy</button>
+        <button class="btn-delete-ex" title="Eliminar receta" onclick="deleteSavedRecipe(${r.id})">✕</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+window.addSavedRecipeToMenu = function(recipeIdx) {
+  const recipe = allUserRecipes[recipeIdx];
+  if (!recipe || !customDietPlan) return;
+
+  const mealNum = prompt(`¿A qué comida deseas incorporar "${recipe.title}" (${recipe.kcal} kcal)?\n1: Desayuno\n2: Almuerzo\n3: Merienda\n4: Cena`, "2");
+  if (mealNum) {
+    const idx = parseInt(mealNum) - 1;
+    if (customDietPlan[idx]) {
+      customDietPlan[idx].items.push(`${recipe.title} (${recipe.ingredients})`);
+      customDietPlan[idx].kcal = recipe.kcal;
+      localStorage.setItem('customUserDietPlan', JSON.stringify(customDietPlan));
+      renderDietMeals();
+      alert(`¡${recipe.title} añadida a tu ${customDietPlan[idx].title}!`);
+    }
+  }
+};
+
+window.deleteSavedRecipe = async function(recipeId) {
+  if (confirm("¿Deseas eliminar esta receta guardada?")) {
+    await fetch(`${SUPABASE_URL}/rest/v1/user_recipes?id=eq.${recipeId}`, {
+      method: "DELETE",
+      headers: getAuthHeaders()
+    });
+    loadUserRecipes();
+  }
+};
 
 // Autenticación de Supabase
 function setupAuthSystem() {
@@ -199,6 +354,7 @@ function setupAuthSystem() {
       modal.classList.remove('open');
       alert('¡Sesión iniciada con éxito!');
       loadData();
+      loadUserRecipes();
     } else {
       alert(`Error al iniciar sesión: ${data.error_description || data.msg || 'Credenciales incorrectas'}`);
     }
@@ -231,7 +387,7 @@ function setupAuthSystem() {
   });
 }
 
-// Plan Nutricional & Cálculo de Macros Corregido
+// Plan Nutricional & Macros
 function setupDietSection() {
   const prefSelect = document.getElementById('diet-preference-select');
   if (prefSelect && userProfile) {
@@ -265,10 +421,8 @@ function calculateMacros(totalCalories) {
 
   const proteinGrams = Math.round(weight * proteinFactor);
   const proteinKcal = proteinGrams * 4;
-
   const fatsKcal = Math.round(totalCalories * fatPct);
   const fatsGrams = Math.round(fatsKcal / 9);
-
   const remainingKcal = Math.max(300, totalCalories - (proteinKcal + fatsKcal));
   const carbsGrams = Math.round(remainingKcal / 4);
 
@@ -387,7 +541,6 @@ window.addFoodToMealPrompt = function(mealIdx) {
   }
 };
 
-// Buscador de Alimentos Mercadona / Fitness
 function setupFoodSearchEngine() {
   const input = document.getElementById('food-search-input');
   const results = document.getElementById('food-search-results');
@@ -437,7 +590,7 @@ window.selectFoodToMeal = function(name, kcal) {
   document.getElementById('food-search-input').value = '';
 };
 
-// Rutinas: Edición y Eliminación directa
+// Rutinas
 function setupRoutineSystem() {
   const selectFocus = document.getElementById('workout-focus');
   const selectDays = document.getElementById('workout-days-week');
@@ -838,6 +991,7 @@ async function loadData() {
     renderDiagnostic();
     renderHeartZones();
     renderDietMeals();
+    loadUserRecipes();
   } catch (err) {
     console.error("Error cargando datos:", err);
   }
