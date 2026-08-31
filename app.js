@@ -163,7 +163,70 @@ document.addEventListener('DOMContentLoaded', () => {
   initApp();
 });
 
-// Creador y Analizador Real de Recetas
+// Sincronización del Perfil con Supabase
+async function syncProfileFromCloud() {
+  if (!authSession || !authSession.user) return;
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/user_profiles?select=*&id=eq.${authSession.user.id}`, {
+      headers: getAuthHeaders()
+    });
+    const data = await res.json();
+    if (Array.isArray(data) && data.length > 0) {
+      const cloud = data[0];
+      userProfile = {
+        name: cloud.name || userProfile?.name || "Alejandro",
+        age: Number(cloud.age) || userProfile?.age || 24,
+        height: Number(cloud.height) || userProfile?.height || 178,
+        weight: Number(cloud.weight) || userProfile?.weight || 80.0,
+        targetLossKg: Number(cloud.target_loss_kg) || userProfile?.targetLossKg || 4,
+        weeks: Number(cloud.weeks) || userProfile?.weeks || 8,
+        weighFreq: cloud.weigh_freq || userProfile?.weighFreq || "3days",
+        dietPreference: cloud.diet_preference || userProfile?.dietPreference || "balanceada",
+        habitType: userProfile?.habitType || "bombo",
+        customDailyCost: userProfile?.customDailyCost || 1.70,
+        workoutFocus: userProfile?.workoutFocus || "fullbody",
+        workoutDays: userProfile?.workoutDays || 4
+      };
+      localStorage.setItem('userProfile', JSON.stringify(userProfile));
+
+      // Actualizar interfaz visual
+      document.getElementById('user-greeting').innerHTML = `${userProfile.name} <span>Trainer</span>`;
+      document.getElementById('user-goal-subtitle').innerText = `Meta: Bajar ${userProfile.targetLossKg} kg en ${userProfile.weeks} semanas`;
+      renderCoachEngine();
+      renderDietMeals();
+    }
+  } catch (err) {
+    console.error("Error sincronizando perfil:", err);
+  }
+}
+
+async function saveProfileToCloud() {
+  if (!authSession || !authSession.user || !userProfile) return;
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/user_profiles`, {
+      method: "POST",
+      headers: {
+        ...getAuthHeaders(),
+        "Prefer": "resolution=merge-duplicates"
+      },
+      body: JSON.stringify({
+        id: authSession.user.id,
+        name: userProfile.name,
+        age: userProfile.age,
+        height: userProfile.height,
+        weight: userProfile.weight,
+        target_loss_kg: userProfile.targetLossKg,
+        weeks: userProfile.weeks,
+        weigh_freq: userProfile.weighFreq,
+        diet_preference: userProfile.dietPreference
+      })
+    });
+  } catch (err) {
+    console.error("Error guardando perfil en nube:", err);
+  }
+}
+
+// Creador y Analizador de Recetas
 function setupCustomRecipeCreator() {
   const form = document.getElementById('create-recipe-form');
   const box = document.getElementById('recipe-analysis-box');
@@ -182,7 +245,6 @@ function setupCustomRecipeCreator() {
 
     const lower = (title + " " + ingredients).toLowerCase();
 
-    // Detección de Ultraprocesados / Caprichos
     const isJunk = lower.includes('donut') || lower.includes('donuts') || lower.includes('bollo') || lower.includes('croissant') || lower.includes('pizza') || lower.includes('hamburguesa con queso') || lower.includes('patatas fritas') || lower.includes('helado') || lower.includes('nutella') || lower.includes('chocolate con leche') || lower.includes('doritos') || lower.includes('galletas');
 
     let suggestedMeal = "Almuerzo o Cena";
@@ -192,7 +254,7 @@ function setupCustomRecipeCreator() {
     if (isJunk) {
       icon = "⚠️";
       suggestedMeal = "Capricho puntual / Cheat Meal (Post-Entreno)";
-      evaluation = `Contiene azúcares simples y grasas saturadas elevadas con baja densidad nutricional. Si decides consumirlo, hazlo cerca de un entreno de alta intensidad o en la merienda para rellenar glucógeno muscular y evitar picos de insulina en la cena.`;
+      evaluation = `Contiene azúcares simples y grasas saturadas con baja densidad nutricional. Si decides consumirlo, hazlo cerca de un entreno intenso o en la merienda para rellenar glucógeno muscular y evitar picos de insulina en la noche.`;
     } else {
       const isBreakfast = lower.includes('avena') || lower.includes('huevo') || lower.includes('claras') || lower.includes('tostada') || lower.includes('fruta') || lower.includes('yogur') || lower.includes('leche') || lower.includes('tortitas');
       const isHeavyLunch = lower.includes('pollo') || lower.includes('arroz') || lower.includes('pasta') || lower.includes('ternera') || lower.includes('patata') || lower.includes('legumbres') || lower.includes('lentejas');
@@ -251,7 +313,6 @@ function setupCustomRecipeCreator() {
       if (mealNum) {
         const idx = parseInt(mealNum) - 1;
         if (customDietPlan[idx]) {
-          // Desglosar ingredientes si vienen separados por comas o sumar la receta
           const rawItems = currentAnalyzedRecipe.ingredients.split(',').map(s => s.trim()).filter(s => s.length > 0);
           const itemsToAdd = rawItems.length > 1 ? rawItems : [`${currentAnalyzedRecipe.title} (${currentAnalyzedRecipe.ingredients})`];
 
@@ -259,7 +320,7 @@ function setupCustomRecipeCreator() {
           customDietPlan[idx].kcal = currentAnalyzedRecipe.kcal;
           localStorage.setItem('customUserDietPlan', JSON.stringify(customDietPlan));
           renderDietMeals();
-          alert(`¡"${currentAnalyzedRecipe.title}" añadida con éxito a tu ${customDietPlan[idx].title}!`);
+          alert(`¡"${currentAnalyzedRecipe.title}" añadida a tu ${customDietPlan[idx].title}!`);
         }
       }
       box.style.display = 'none';
@@ -337,7 +398,7 @@ window.deleteSavedRecipe = async function(recipeId) {
   }
 };
 
-// Autenticación de Supabase
+// Autenticación con Supabase
 function setupAuthSystem() {
   const modal = document.getElementById('auth-modal');
   const btnOpen = document.getElementById('btn-auth-action');
@@ -379,6 +440,7 @@ function setupAuthSystem() {
       localStorage.setItem('supabase_auth_session', JSON.stringify(authSession));
       modal.classList.remove('open');
       alert('¡Sesión iniciada con éxito!');
+      await syncProfileFromCloud();
       loadData();
       loadUserRecipes();
     } else {
@@ -421,6 +483,7 @@ function setupDietSection() {
     prefSelect.addEventListener('change', () => {
       userProfile.dietPreference = prefSelect.value;
       localStorage.setItem('userProfile', JSON.stringify(userProfile));
+      saveProfileToCloud();
       generateBaseDietPlan();
       renderDietMeals();
     });
@@ -540,12 +603,10 @@ window.toggleMealDone = function(mealId) {
   renderDietMeals();
 };
 
-// Alternativas separadas por líneas
 window.replaceMealAlternative = function(mealType, mealIdx) {
   const pool = ALTERNATIVES_POOL[mealType] || ALTERNATIVES_POOL.almuerzo;
   const randomChoice = pool[Math.floor(Math.random() * pool.length)];
   
-  // Guardamos array de ingredientes individuales
   customDietPlan[mealIdx].items = [...randomChoice.items];
   customDietPlan[mealIdx].kcal = randomChoice.kcal;
   localStorage.setItem('customUserDietPlan', JSON.stringify(customDietPlan));
@@ -635,6 +696,7 @@ function setupRoutineSystem() {
     userProfile.workoutFocus = focus;
     userProfile.workoutDays = daysCount;
     localStorage.setItem('userProfile', JSON.stringify(userProfile));
+    saveProfileToCloud();
 
     let list = JSON.parse(JSON.stringify(base));
     while (list.length < daysCount) {
@@ -768,6 +830,7 @@ function checkWeighReminder() {
         userProfile.weight = Number(peso);
         localStorage.setItem('userProfile', JSON.stringify(userProfile));
         localStorage.setItem('lastWeighedDate', String(Date.now()));
+        saveProfileToCloud();
         fetch(`${SUPABASE_URL}/rest/v1/body_metrics`, {
           method: "POST",
           headers: getAuthHeaders(),
@@ -847,7 +910,7 @@ function setupProfileModal() {
 
   btnClose.addEventListener('click', () => modal.classList.remove('open'));
 
-  form.addEventListener('submit', (e) => {
+  form.addEventListener('submit', async (e) => {
     e.preventDefault();
     userProfile = {
       ...userProfile,
@@ -860,6 +923,7 @@ function setupProfileModal() {
       weeks: Number(inWeeks.value)
     };
     localStorage.setItem('userProfile', JSON.stringify(userProfile));
+    await saveProfileToCloud();
     modal.classList.remove('open');
     document.getElementById('user-greeting').innerHTML = `${userProfile.name} <span>Trainer</span>`;
     document.getElementById('user-goal-subtitle').innerText = `Meta: Bajar ${userProfile.targetLossKg} kg en ${userProfile.weeks} semanas`;
@@ -1302,6 +1366,7 @@ function initApp() {
           userProfile.weight = Number(weight);
           localStorage.setItem('userProfile', JSON.stringify(userProfile));
           localStorage.setItem('lastWeighedDate', String(Date.now()));
+          await saveProfileToCloud();
           await fetch(`${SUPABASE_URL}/rest/v1/body_metrics`, {
             method: "POST",
             headers: getAuthHeaders(),
@@ -1344,6 +1409,11 @@ function initApp() {
   if (userProfile) {
     document.getElementById('user-greeting').innerHTML = `${userProfile.name} <span>Trainer</span>`;
     document.getElementById('user-goal-subtitle').innerText = `Meta: Bajar ${userProfile.targetLossKg} kg en ${userProfile.weeks} semanas`;
+  }
+
+  // Si ya hay sesión abierta, descargar perfil remoto al abrir
+  if (authSession) {
+    syncProfileFromCloud();
   }
 
   loadData();
