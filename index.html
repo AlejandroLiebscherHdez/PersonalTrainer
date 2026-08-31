@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>PersonalTrainer AI | Fitness, Nutrition & Habits</title>
-  <link rel="stylesheet" href="style.css?v=110">
+  <link rel="stylesheet" href="style.css?v=120">
   <link rel="manifest" href="manifest.json">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -127,7 +127,7 @@
         </div>
       </section>
 
-      <!-- CREADOR DE RECETAS PROPIAS CON IA / ANÁLISIS -->
+      <!-- CREADOR DE RECETAS PROPIAS -->
       <section class="card custom-recipe-card">
         <h2>👨‍🍳 Crear Receta Propia & Analizador</h2>
         <p class="modal-sub" style="margin-bottom: 10px;">Escribe una receta improvisada (de TikTok, casera, etc.) para que la app te analice cuándo comerla.</p>
@@ -157,7 +157,6 @@
           <button type="submit" class="btn-primary" style="margin-top: 4px;">🧠 Analizar y Guardar en mi Cuenta</button>
         </form>
 
-        <!-- Caja de Análisis de la Receta -->
         <div id="recipe-analysis-box" class="recipe-analysis-box" style="display: none;">
           <h3 id="analysis-title" style="color: var(--accent-blue); font-size: 0.95rem;">Análisis de la receta</h3>
           <p id="analysis-text" style="font-size: 0.84rem; margin: 6px 0 10px;"></p>
@@ -176,7 +175,7 @@
         </div>
       </section>
 
-      <!-- Buscador de Alimentos Mercadona / Fitness -->
+      <!-- Buscador de Alimentos Mercadona -->
       <section class="card search-card">
         <h2>🔍 Catálogo de Alimentos (Mercadona / Fitness)</h2>
         <div class="search-box-group">
@@ -452,61 +451,8 @@
     </div>
   </div>
 
-  <!-- MODAL DE CONFIGURACIÓN DEL PERFIL -->
+  <!-- MODAL ÚNICO DE CONFIGURACIÓN DEL PERFIL (CON APPLE WATCH) -->
   <div id="profile-modal" class="modal-overlay">
-    <div class="modal-card">
-      <h2>⚙️ Configuración del Perfil & Alertas</h2>
-      <p class="modal-sub">Ajusta tus datos y la frecuencia de pesaje.</p>
-      
-      <form id="profile-form">
-        <div class="form-group">
-          <label for="prof-name">Nombre:</label>
-          <input type="text" id="prof-name" required placeholder="Tu nombre">
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label for="prof-age">Edad:</label>
-            <input type="number" id="prof-age" required placeholder="Ej: 24">
-          </div>
-          <div class="form-group">
-            <label for="prof-height">Altura (cm):</label>
-            <input type="number" id="prof-height" required placeholder="Ej: 178">
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label for="prof-weight">Peso Actual (kg):</label>
-          <input type="number" step="0.1" id="prof-weight" required placeholder="Ej: 80.0">
-        </div>
-
-        <div class="form-group">
-          <label for="prof-weigh-freq">Frecuencia de Recordatorio de Pesaje:</label>
-          <select id="prof-weigh-freq">
-            <option value="daily">Diariamente al abrir la web</option>
-            <option value="3days" selected>Cada 3 días</option>
-            <option value="weekly">Semanalmente (Cada 7 días)</option>
-            <option value="never">Desactivar recordatorio automático</option>
-          </select>
-        </div>
-
-        <div class="goal-slider-box">
-          <label for="prof-target-loss">Kilos a perder: <strong id="val-target-loss">4</strong> kg</label>
-          <input type="range" id="prof-target-loss" min="1" max="25" value="4">
-
-          <label for="prof-weeks" style="margin-top: 10px;">En cuántas semanas: <strong id="val-weeks">8</strong> semanas</label>
-          <input type="range" id="prof-weeks" min="2" max="24" value="8">
-
-          <div class="calculated-plan" id="preview-plan"></div>
-        </div>
-
-        <div class="modal-actions">
-          <button type="button" id="btn-close-modal" class="btn-secondary">Cerrar</button>
-          <button type="submit" class="btn-primary">Guardar Ajustes</button>
-        </div>
-      </form>
-    </div>
-    <div id="profile-modal" class="modal-overlay">
     <div class="modal-card">
       <h2>⚙️ Configuración del Perfil & Dispositivos</h2>
       <p class="modal-sub">Ajusta tus datos personales y dispositivos conectados.</p>
@@ -533,6 +479,7 @@
           <input type="number" step="0.1" id="prof-weight" required placeholder="Ej: 80.0">
         </div>
 
+        <!-- SELECTOR DE APPLE WATCH -->
         <div class="form-group">
           <label for="prof-has-watch">⌚ Dispositivo de Salud (Apple Watch):</label>
           <select id="prof-has-watch">
@@ -568,8 +515,7 @@
       </form>
     </div>
   </div>
-  </div>
 
-  <script src="app.js?v=110"></script>
+  <script src="app.js?v=120"></script>
 </body>
 </html>

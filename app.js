@@ -61,7 +61,6 @@ const FOOD_DATABASE = [
   { name: "Brócoli / Espárragos Verdes al Vapor (150g)", type: "Verdura", kcal: 45, p: 4, c: 5, f: 0.4 }
 ];
 
-// Alternativas desglosadas en arrays de ingredientes
 const ALTERNATIVES_POOL = {
   desayuno: [
     { items: ["Tortilla de 3 claras y 1 huevo entero con jamón de pavo", "60g de copos de avena en bebida vegetal", "1 puñado de frutos rojos"], kcal: 420 },
@@ -180,6 +179,7 @@ async function syncProfileFromCloud() {
         weight: Number(cloud.weight) || userProfile?.weight || 80.0,
         targetLossKg: Number(cloud.target_loss_kg) || userProfile?.targetLossKg || 4,
         weeks: Number(cloud.weeks) || userProfile?.weeks || 8,
+        hasWatch: cloud.has_watch !== undefined ? cloud.has_watch : (userProfile?.hasWatch !== undefined ? userProfile.hasWatch : true),
         weighFreq: cloud.weigh_freq || userProfile?.weighFreq || "3days",
         dietPreference: cloud.diet_preference || userProfile?.dietPreference || "balanceada",
         habitType: userProfile?.habitType || "bombo",
@@ -189,10 +189,10 @@ async function syncProfileFromCloud() {
       };
       localStorage.setItem('userProfile', JSON.stringify(userProfile));
 
-      // Actualizar interfaz visual
       document.getElementById('user-greeting').innerHTML = `${userProfile.name} <span>Trainer</span>`;
       document.getElementById('user-goal-subtitle').innerText = `Meta: Bajar ${userProfile.targetLossKg} kg en ${userProfile.weeks} semanas`;
       renderCoachEngine();
+      updateDashboardMetrics();
       renderDietMeals();
     }
   } catch (err) {
@@ -217,6 +217,7 @@ async function saveProfileToCloud() {
         weight: userProfile.weight,
         target_loss_kg: userProfile.targetLossKg,
         weeks: userProfile.weeks,
+        has_watch: userProfile.hasWatch,
         weigh_freq: userProfile.weighFreq,
         diet_preference: userProfile.dietPreference
       })
@@ -244,7 +245,6 @@ function setupCustomRecipeCreator() {
     const protein = Number(document.getElementById('recipe-protein').value) || 0;
 
     const lower = (title + " " + ingredients).toLowerCase();
-
     const isJunk = lower.includes('donut') || lower.includes('donuts') || lower.includes('bollo') || lower.includes('croissant') || lower.includes('pizza') || lower.includes('hamburguesa con queso') || lower.includes('patatas fritas') || lower.includes('helado') || lower.includes('nutella') || lower.includes('chocolate con leche') || lower.includes('doritos') || lower.includes('galletas');
 
     let suggestedMeal = "Almuerzo o Cena";
@@ -254,7 +254,7 @@ function setupCustomRecipeCreator() {
     if (isJunk) {
       icon = "⚠️";
       suggestedMeal = "Capricho puntual / Cheat Meal (Post-Entreno)";
-      evaluation = `Contiene azúcares simples y grasas saturadas con baja densidad nutricional. Si decides consumirlo, hazlo cerca de un entreno intenso o en la merienda para rellenar glucógeno muscular y evitar picos de insulina en la noche.`;
+      evaluation = `Contiene azúcares simples y grasas saturadas con baja densidad nutricional. Consúmelo cerca de un entreno de alta intensidad o en la merienda para rellenar glucógeno muscular y evitar picos de insulina en la cena.`;
     } else {
       const isBreakfast = lower.includes('avena') || lower.includes('huevo') || lower.includes('claras') || lower.includes('tostada') || lower.includes('fruta') || lower.includes('yogur') || lower.includes('leche') || lower.includes('tortitas');
       const isHeavyLunch = lower.includes('pollo') || lower.includes('arroz') || lower.includes('pasta') || lower.includes('ternera') || lower.includes('patata') || lower.includes('legumbres') || lower.includes('lentejas');
@@ -1433,7 +1433,6 @@ function initApp() {
     document.getElementById('user-goal-subtitle').innerText = `Meta: Bajar ${userProfile.targetLossKg} kg en ${userProfile.weeks} semanas`;
   }
 
-  // Si ya hay sesión abierta, descargar perfil remoto al abrir
   if (authSession) {
     syncProfileFromCloud();
   }
