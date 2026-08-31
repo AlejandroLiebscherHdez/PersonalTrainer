@@ -28,6 +28,7 @@ let customRoutines = JSON.parse(localStorage.getItem('customUserRoutines')) || n
 let customDietPlan = JSON.parse(localStorage.getItem('customUserDietPlan')) || null;
 
 // Estados de entrenamientos completados hoy
+let selectedWorkoutMetric = localStorage.getItem('selectedWorkoutMetric') || 'kg';
 let completedWorkouts = JSON.parse(localStorage.getItem('completedWorkouts_' + new Date().toISOString().split('T')[0])) || {};
 let checkedExercises = JSON.parse(localStorage.getItem('checkedExercises_' + new Date().toISOString().split('T')[0])) || {};
 
@@ -164,6 +165,7 @@ document.addEventListener('DOMContentLoaded', () => {
   setupRoutineSystem();
   setupSearchEngine();
   setupFoodSearchEngine();
+  setupWorkoutChartSelector();
   setupCustomRecipeCreator();
   setupDietSection();
   checkWeighReminder();
@@ -718,26 +720,41 @@ function setupRoutineSystem() {
   if (btnGen) btnGen.addEventListener('click', generateNewRoutine);
 }
 
+function setupWorkoutChartSelector() {
+  const select = document.getElementById('workout-chart-metric-select');
+  if (select) {
+    select.value = selectedWorkoutMetric;
+    select.addEventListener('change', (e) => {
+      selectedWorkoutMetric = e.target.value;
+      localStorage.setItem('selectedWorkoutMetric', selectedWorkoutMetric);
+      renderVolumeChart();
+    });
+  }
+}
+
 function renderCurrentRoutine() {
   const container = document.getElementById('weekly-routine-container');
   if (!container || !customRoutines) return;
 
-  const todayKey = new Date().toISOString().split('T')[0];
-
   container.innerHTML = customRoutines.map((r, dIdx) => {
     const isDone = !!completedWorkouts[dIdx];
     
-    // Cálculo de volumen del día
     let dayTonnage = 0;
-    r.exercises.forEach((ex, eIdx) => {
+    let dayReps = 0;
+    r.exercises.forEach((ex) => {
       const kg = Number(ex[2] || 0);
       const setsStr = String(ex[1]);
       const setsMatch = setsStr.match(/(\d+)\s*x\s*(\d+)/i);
-      if (setsMatch && kg > 0) {
+      if (setsMatch) {
         const totalReps = Number(setsMatch[1]) * Number(setsMatch[2]);
-        dayTonnage += totalReps * kg;
+        dayReps += totalReps;
+        if (kg > 0) {
+          dayTonnage += totalReps * kg;
+        }
       }
     });
+
+    const dayKcal = Math.round(200 + (dayTonnage * 0.015));
 
     return `
       <div class="routine-day-card ${isDone ? 'completed-workout' : ''}">
@@ -746,8 +763,8 @@ function renderCurrentRoutine() {
           <span class="routine-day-focus">${r.focus}</span>
         </div>
         <div class="workout-stats-summary">
-          <span>Volumen Total: <strong>${dayTonnage.toLocaleString()} kg</strong></span>
-          <span>Gasto Estimado: <strong>~${Math.round(200 + (dayTonnage * 0.015))} kcal</strong></span>
+          <span>Volumen: <strong>${dayTonnage.toLocaleString()} kg</strong></span>
+          <span>Gasto Estimado: <strong>~${dayKcal} kcal</strong></span>
         </div>
         <ul class="exercise-list">
           ${r.exercises.map((ex, eIdx) => {
@@ -770,43 +787,43 @@ function renderCurrentRoutine() {
           }).join('')}
         </ul>
         <button class="btn-add-ex" onclick="addNewExerciseToDay(${dIdx})">+ Añadir ejercicio a ${r.day}</button>
-        <button class="btn-complete-workout ${isDone ? 'completed' : ''}" onclick="toggleWorkoutCompleted(${dIdx}, ${dayTonnage})">
-          ${isDone ? '✓ Sesión Completada (+kcal añadidas)' : '✓ Completar Sesión de Hoy'}
+        <button class="btn-complete-workout ${isDone ? 'completed' : ''}" onclick="toggleWorkoutCompleted(${dIdx}, ${dayTonnage}, ${dayKcal}, ${dayReps})">
+          ${isDone ? '✓ Sesión Completada (Registrada en Gráfica)' : '✓ Completar Sesión de Hoy'}
         </button>
       </div>
     `;
   }).join('');
 }
 
-window.toggleExerciseCheck = function(dIdx, eIdx) {
-  const todayKey = 'checkedExercises_' + new Date().toISOString().split('T')[0];
-  const exKey = `${dIdx}_${eIdx}`;
-  checkedExercises[exKey] = !checkedExercises[exKey];
-  localStorage.setItem(todayKey, JSON.stringify(checkedExercises));
-  renderCurrentRoutine();
-};
-
-window.toggleWorkoutCompleted = async function(dIdx, tonnage) {
+window.toggleWorkoutCompleted = async function(dIdx, tonnage, kcal, reps) {
   const todayKey = 'completedWorkouts_' + new Date().toISOString().split('T')[0];
   const isDone = !completedWorkouts[dIdx];
-  completedWorkouts[dIdx] = isDone;
+  
+  if (isDone) {
+    completedWorkouts[dIdx] = {
+      tonnage: tonnage,
+      kcal: kcal,
+      reps: reps,
+      completedAt: Date.now()
+    };
+  } else {
+    delete completedWorkouts[dIdx];
+  }
+
   localStorage.setItem(todayKey, JSON.stringify(completedWorkouts));
 
-  const gymBurnKcal = Math.round(220 + (tonnage * 0.015));
-
   if (isDone) {
-    // Subir entrenamiento a Supabase para sumar calorías
     try {
       await fetch(`${SUPABASE_URL}/rest/v1/workouts`, {
         method: "POST",
         headers: getAuthHeaders(),
         body: JSON.stringify({
           workout_type: `Gimnasio: ${customRoutines[dIdx].day} (${customRoutines[dIdx].focus})`,
-          active_calories: gymBurnKcal,
+          active_calories: kcal,
           avg_bpm: 125
         })
       });
-      alert(`¡Sesión completada! Se han calculado ${gymBurnKcal} kcal quemadas y sumadas a tu balance de hoy.`);
+      alert(`¡Sesión completada! Se han sumado ${kcal} kcal y ${tonnage} kg a tu gráfica y balance de hoy.`);
     } catch (err) {
       console.error(err);
     }

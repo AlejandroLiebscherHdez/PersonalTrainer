@@ -253,8 +253,16 @@
       </section>
 
       <!-- Gráfica de Progresión de Volumen / Cargas -->
+      <!-- Gráfica Dinámica de Rendimiento en Entrenamientos -->
       <section class="card chart-card">
-        <h2>📈 Volumen de Carga Semanal (Kg Levantados)</h2>
+        <div class="section-header-flex">
+          <h2>📈 Progreso Semanal de Entrenamientos</h2>
+          <select id="workout-chart-metric-select" class="select-sm">
+            <option value="kg">🏋️ Kg Levantados</option>
+            <option value="kcal">🔥 Kcal Quemadas</option>
+            <option value="reps">⏱️ Repeticiones Totales</option>
+          </select>
+        </div>
         <canvas id="volumeChart"></canvas>
       </section>
 
