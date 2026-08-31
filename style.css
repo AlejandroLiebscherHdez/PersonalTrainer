@@ -582,3 +582,102 @@ input[type="range"] {
 .progress-bar-fill.fill-green {
   background: var(--accent-green);
 }
+
+/* Nutrición y Macros */
+.macros-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+}
+
+.macro-box {
+  background: #0b0f19;
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  padding: 10px 6px;
+  text-align: center;
+}
+
+.macro-label {
+  display: block;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+  text-transform: uppercase;
+}
+
+.macro-val {
+  display: block;
+  font-size: 1.15rem;
+  font-weight: 800;
+}
+
+.macro-box small {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+.section-header-flex {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.select-sm {
+  background: #0b0f19;
+  border: 1px solid var(--card-border);
+  color: var(--text-main);
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 0.78rem;
+}
+
+.meals-accordion {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.meal-card {
+  background: #0b0f19;
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+
+.meal-title {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--accent-blue);
+  margin-bottom: 4px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.meal-desc {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+/* Botón de eliminación de ejercicio */
+.btn-delete-ex {
+  background: transparent;
+  border: none;
+  color: #ef4444;
+  font-size: 0.95rem;
+  cursor: pointer;
+  padding: 0 4px;
+  margin-left: 6px;
+  transition: transform 0.1s;
+}
+
+.btn-delete-ex:active {
+  transform: scale(0.85);
+}
+
+.header-actions {
+  display: flex;
+  gap: 6px;
+}
