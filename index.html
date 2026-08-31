@@ -1,548 +1,602 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>PersonalTrainer AI | Fitness, Nutrition & Habits</title>
-  <link rel="stylesheet" href="style.css?v=140">
-  <link rel="manifest" href="manifest.json">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PersonalTrainer AI | Fitness, Nutrition & Habits</title>
+    <link rel="stylesheet" href="style.css?v=140">
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
+
 <body>
-  <div class="app-container">
-    <header>
-      <div class="header-top">
-        <h1 id="user-greeting">Personal<span>Trainer</span></h1>
-        <div class="header-actions">
-          <button id="btn-open-profile" class="btn-icon" title="Ajustar Perfil">⚙️</button>
-          <button id="btn-auth-action" class="btn-icon" title="Cuenta">👤</button>
-        </div>
-      </div>
-      <p class="subtitle" id="user-goal-subtitle">Plan de Alto Rendimiento, Nutrición y Salud</p>
-    </header>
-
-    <!-- Barra de Navegación -->
-    <nav class="nav-tabs">
-      <button class="tab-btn active" data-tab="tab-dashboard">🏋️‍♂️ Mi Plan</button>
-      <button class="tab-btn" data-tab="tab-diet">🥗 Nutrición</button>
-      <button class="tab-btn" data-tab="tab-fitness">⚽ Rutinas</button>
-      <button class="tab-btn" data-tab="tab-health">❤️ Salud</button>
-      <button class="tab-btn" data-tab="tab-habits">🚭 Hábitos</button>
-      <button class="tab-btn" data-tab="tab-log">➕ Registrar</button>
-    </nav>
-
-    <!-- PESTAÑA 1: MI PLAN & COACH -->
-    <main id="tab-dashboard" class="tab-content active">
-      <section class="card coach-card">
-        <h2>🧠 Coach Nutricional & Metabólico</h2>
-        <div id="coach-advice-container">
-          <p class="insight-text">Calculando balance energético diario...</p>
-        </div>
-        <div class="calories-target-box">
-          <span class="cal-title">Presupuesto Calórico Recomendado Hoy</span>
-          <span id="daily-target-calories" class="cal-number">-- kcal</span>
-          <small id="cal-breakdown-text">TMB + Gasto Entreno & Watch - Déficit de Pérdida</small>
-        </div>
-      </section>
-
-      <section class="card checklist-card">
-        <h2>✅ Checklist Diario de Alto Rendimiento</h2>
-        <div class="checklist-group">
-          <label class="check-item"><input type="checkbox" id="chk-water"><span>💧 Hidratación (2.5L - 3L agua fresca)</span></label>
-          <label class="check-item"><input type="checkbox" id="chk-creatine"><span>⚡ Suplementación / Creatina (dosis diaria)</span></label>
-          <label class="check-item"><input type="checkbox" id="chk-protein"><span>🥩 Meta Proteica (~1.8g - 2.0g / kg de peso)</span></label>
-          <label class="check-item"><input type="checkbox" id="chk-steps"><span>🚶‍♂️ Superar objetivo de 8.000 pasos</span></label>
-          <label class="check-item"><input type="checkbox" id="chk-workout"><span>🔥 Sesión de entrenamiento o deporte completado</span></label>
-          <label class="check-item"><input type="checkbox" id="chk-clean"><span>🚭 Día 100% libre de vapeo y nicotina</span></label>
-          <label class="check-item"><input type="checkbox" id="chk-sleep"><span>😴 Descanso regenerativo (7h - 8h de sueño)</span></label>
-        </div>
-      </section>
-
-      <section class="card summary-card">
-        <h2>Resumen de Hoy</h2>
-        <div class="metrics-grid">
-          <div class="metric-box"><span class="metric-title">Pasos</span><span id="metric-today-steps" class="metric-value">0</span></div>
-          <div class="metric-box"><span class="metric-title">Gasto Entrenos</span><span id="metric-today-burn" class="metric-value">0 kcal</span></div>
-          <div class="metric-box"><span class="metric-title">Pulso Reposo</span><span id="metric-resting-bpm" class="metric-value">-- bpm</span></div>
-          <div class="metric-box"><span class="metric-title">Días sin Vapear</span><span id="metric-clean-days" class="metric-value">0 d</span></div>
-        </div>
-      </section>
-    </main>
-
-    <!-- PESTAÑA 2: NUTRICIÓN, DESPENSA Y RECETAS UNIFICADAS -->
-    <main id="tab-diet" class="tab-content">
-      <section class="card diet-macros-card">
-        <h2>📊 Reparto de Macronutrientes Diario</h2>
-        <div class="macros-grid">
-          <div class="macro-box">
-            <span class="macro-label">Proteínas</span>
-            <strong id="macro-protein" class="macro-val" style="color: #38bdf8;">-- g</strong>
-            <small id="macro-protein-kcal">-- kcal</small>
-          </div>
-          <div class="macro-box">
-            <span class="macro-label">Carbohidratos</span>
-            <strong id="macro-carbs" class="macro-val" style="color: #f59e0b;">-- g</strong>
-            <small id="macro-carbs-kcal">-- kcal</small>
-          </div>
-          <div class="macro-box">
-            <span class="macro-label">Grasas Saludables</span>
-            <strong id="macro-fats" class="macro-val" style="color: #10b981;">-- g</strong>
-            <small id="macro-fats-kcal">-- kcal</small>
-          </div>
-        </div>
-      </section>
-
-      <!-- UNIFICACIÓN: CREACIÓN DE RECETAS CON DESPLEGABLE -->
-      <section class="card custom-recipe-card">
-        <div class="section-header-flex">
-          <h2>👨‍🍳 Creador & Analizador de Recetas</h2>
-          <select id="recipe-mode-select" class="select-sm">
-            <option value="manual">Modo Manual / Improvisado</option>
-            <option value="ia">Modo Inteligente (IA con Despensa)</option>
-          </select>
-        </div>
-
-        <!-- Sub-vista Manual -->
-        <div id="recipe-mode-manual-view" class="recipe-sub-view">
-          <p class="modal-sub">Escribe una receta improvisada para analizar sus macros y añadirla a tus menús.</p>
-          <form id="create-recipe-form">
-            <div class="form-group">
-              <label for="recipe-title">Nombre de la receta:</label>
-              <input type="text" id="recipe-title" placeholder="Ej: Ensalada César Casera Fitness">
+    <div class="app-container">
+        <header>
+            <div class="header-top">
+                <h1 id="user-greeting">Personal<span>Trainer</span></h1>
+                <div class="header-actions">
+                    <button id="btn-open-profile" class="btn-icon" title="Ajustar Perfil">⚙️</button>
+                    <button id="btn-auth-action" class="btn-icon" title="Cuenta">👤</button>
+                </div>
             </div>
-            <div class="form-group">
-              <label for="recipe-ingredients">Ingredientes utilizados:</label>
-              <input type="text" id="recipe-ingredients" placeholder="Ej: Lechuga, tomate, pollo a la plancha...">
-            </div>
-            <div class="form-row">
-              <div class="form-group">
-                <label for="recipe-kcal">Calorías aprox (kcal):</label>
-                <input type="number" id="recipe-kcal" placeholder="Ej: 450">
-              </div>
-              <div class="form-group">
-                <label for="recipe-protein">Proteína aprox (g):</label>
-                <input type="number" id="recipe-protein" placeholder="Ej: 35">
-              </div>
-            </div>
-            <button type="submit" class="btn-primary" style="margin-top: 6px;">🧠 Analizar y Guardar Receta</button>
-          </form>
-        </div>
+            <p class="subtitle" id="user-goal-subtitle">Plan de Alto Rendimiento, Nutrición y Salud</p>
+        </header>
 
-        <!-- Sub-vista IA (Usa Despensa) -->
-        <div id="recipe-mode-ia-view" class="recipe-sub-view" style="display: none;">
-          <p class="modal-sub">Selecciona ingredientes de tu despensa para que el sistema proponga el plato y macros.</p>
-          <div id="recipe-builder-selector" style="margin-bottom: 12px; display: flex; gap: 6px; flex-wrap: wrap;"></div>
-          <button type="button" id="btn-generate-recipe" class="btn-primary" style="width: 100%;">✨ Generar con Ingredientes Seleccionados</button>
-        </div>
+        <!-- Barra de Navegación -->
+        <nav class="nav-tabs">
+            <button class="tab-btn active" data-tab="tab-dashboard">🏋️‍♂️ Mi Plan</button>
+            <button class="tab-btn" data-tab="tab-diet">🥗 Nutrición</button>
+            <button class="tab-btn" data-tab="tab-fitness">⚽ Rutinas</button>
+            <button class="tab-btn" data-tab="tab-health">❤️ Salud</button>
+            <button class="tab-btn" data-tab="tab-habits">🚭 Hábitos</button>
+            <button class="tab-btn" data-tab="tab-log">➕ Registrar</button>
+        </nav>
 
-        <div id="recipe-output-box" class="recipe-analysis-box" style="display: none;">
-          <h3 id="output-recipe-title" style="color: var(--accent-blue); font-size: 0.95rem;"></h3>
-          <p id="output-recipe-desc" style="font-size: 0.84rem; margin: 6px 0 10px;"></p>
-          <div id="output-recipe-macros" style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 10px;"></div>
-          <div class="modal-actions">
-            <button type="button" id="btn-save-generated-recipe" class="btn-primary" style="padding: 10px;">📥 Guardar en Mis Recetas</button>
-            <button type="button" id="btn-close-analysis" class="btn-secondary" style="padding: 10px;">Descartar</button>
-          </div>
-        </div>
-      </section>
+        <!-- PESTAÑA 1: MI PLAN & COACH -->
+        <main id="tab-dashboard" class="tab-content active">
+            <section class="card coach-card">
+                <h2>🧠 Coach Nutricional & Metabólico</h2>
+                <div id="coach-advice-container">
+                    <p class="insight-text">Calculando balance energético diario...</p>
+                </div>
+                <div class="calories-target-box">
+                    <span class="cal-title">Presupuesto Calórico Recomendado Hoy</span>
+                    <span id="daily-target-calories" class="cal-number">-- kcal</span>
+                    <small id="cal-breakdown-text">TMB + Gasto Entreno & Watch - Déficit de Pérdida</small>
+                </div>
+            </section>
 
-      <!-- BLOQUE UNIFICADO: DESPENSA Y CATÁLOGO DE ALIMENTOS -->
-      <section class="card pantry-card">
-        <h2>🥦 Despensa e Ingredientes Guardados</h2>
-        <p class="modal-sub">Añade tus alimentos base con sus calorías y proteínas para usarlos en el creador de recetas.</p>
-        
-        <form id="ingredient-form" style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px;">
-          <input type="text" id="ing-name" placeholder="Nombre (ej: Arroz basmati)" required style="flex: 2;">
-          <input type="number" id="ing-weight" placeholder="Peso (g)" required style="flex: 1;">
-          <input type="number" id="ing-cal" placeholder="Kcal" required style="flex: 1;">
-          <input type="number" id="ing-prot" placeholder="Proteína (g)" required style="flex: 1;">
-          <button type="submit" class="btn-primary" style="flex: 1;">+ Añadir</button>
-        </form>
-        <div id="ingredients-list" class="pill-container" style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px;"></div>
+            <section class="card checklist-card">
+                <h2>✅ Checklist Diario de Alto Rendimiento</h2>
+                <div class="checklist-group">
+                    <label class="check-item"><input type="checkbox" id="chk-water"><span>💧 Hidratación (2.5L - 3L agua
+                            fresca)</span></label>
+                    <label class="check-item"><input type="checkbox" id="chk-creatine"><span>⚡ Suplementación / Creatina
+                            (dosis diaria)</span></label>
+                    <label class="check-item"><input type="checkbox" id="chk-protein"><span>🥩 Meta Proteica (~1.8g -
+                            2.0g / kg de peso)</span></label>
+                    <label class="check-item"><input type="checkbox" id="chk-steps"><span>🚶‍♂️ Superar objetivo de
+                            8.000 pasos</span></label>
+                    <label class="check-item"><input type="checkbox" id="chk-workout"><span>🔥 Sesión de entrenamiento o
+                            deporte completado</span></label>
+                    <label class="check-item"><input type="checkbox" id="chk-clean"><span>🚭 Día 100% libre de vapeo y
+                            nicotina</span></label>
+                    <label class="check-item"><input type="checkbox" id="chk-sleep"><span>😴 Descanso regenerativo (7h -
+                            8h de sueño)</span></label>
+                </div>
+            </section>
 
-        <!-- Buscador Catálogo Mercadona Justo Abajo -->
-        <div class="search-box-group" style="border-top: 1px solid var(--card-border); padding-top: 14px;">
-          <label style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 6px; display: block;">🔍 Catálogo Rápido (Mercadona / Fitness):</label>
-          <input type="text" id="food-search-input" class="search-input" placeholder="Buscar: Queso batido, Avena, Pavo Hacendado...">
-          <div id="food-search-results" class="search-results-box"></div>
-        </div>
-      </section>
+            <section class="card summary-card">
+                <h2>Resumen de Hoy</h2>
+                <div class="metrics-grid">
+                    <div class="metric-box"><span class="metric-title">Pasos</span><span id="metric-today-steps"
+                            class="metric-value">0</span></div>
+                    <div class="metric-box"><span class="metric-title">Gasto Entrenos</span><span id="metric-today-burn"
+                            class="metric-value">0 kcal</span></div>
+                    <div class="metric-box"><span class="metric-title">Pulso Reposo</span><span id="metric-resting-bpm"
+                            class="metric-value">-- bpm</span></div>
+                    <div class="metric-box"><span class="metric-title">Días sin Vapear</span><span
+                            id="metric-clean-days" class="metric-value">0 d</span></div>
+                </div>
+            </section>
+        </main>
 
-      <!-- RECETARIO GUARDADO (ÚNICO) -->
-      <section class="card saved-recipes-card">
-        <div class="section-header-flex">
-          <h2>📖 Mis Recetas Guardadas</h2>
-          <button type="button" id="btn-open-manual-recipe" class="btn-primary" style="padding: 6px 12px; font-size: 0.85rem;">+ Nueva Receta</button>
-        </div>
-        <div id="saved-recipes-container" class="meals-accordion" style="margin-top: 10px;">
-          <p class="empty-msg" style="color: var(--text-muted); font-size: 0.85rem;">No tienes recetas guardadas todavía.</p>
-        </div>
-      </section>
+        <!-- PESTAÑA 2: NUTRICIÓN, DESPENSA Y RECETAS UNIFICADAS -->
+        <main id="tab-diet" class="tab-content">
+            <section class="card diet-macros-card">
+                <h2>📊 Reparto de Macronutrientes Diario</h2>
+                <div class="macros-grid">
+                    <div class="macro-box">
+                        <span class="macro-label">Proteínas</span>
+                        <strong id="macro-protein" class="macro-val" style="color: #38bdf8;">-- g</strong>
+                        <small id="macro-protein-kcal">-- kcal</small>
+                    </div>
+                    <div class="macro-box">
+                        <span class="macro-label">Carbohidratos</span>
+                        <strong id="macro-carbs" class="macro-val" style="color: #f59e0b;">-- g</strong>
+                        <small id="macro-carbs-kcal">-- kcal</small>
+                    </div>
+                    <div class="macro-box">
+                        <span class="macro-label">Grasas Saludables</span>
+                        <strong id="macro-fats" class="macro-val" style="color: #10b981;">-- g</strong>
+                        <small id="macro-fats-kcal">-- kcal</small>
+                    </div>
+                </div>
+            </section>
 
-      <!-- MENÚS Y COMIDAS EDITABLES -->
-      <section class="card diet-menu-card">
-        <div class="section-header-flex">
-          <h2>🍽️ Distribución de Comidas</h2>
-          <select id="diet-preference-select" class="select-sm">
-            <option value="balanceada">Dieta Balanceada</option>
-            <option value="alta_proteina">Definición / Alta Proteína</option>
-            <option value="volumen">Volumen Limpio / Rendimiento</option>
-            <option value="mediterranea">Mediterránea Tradicional</option>
-            <option value="lowcarb">Baja en Carbohidratos (Low Carb)</option>
-          </select>
-        </div>
-        <div id="diet-meals-container" class="meals-accordion"></div>
-      </section>
-    </main>
+            <!-- UNIFICACIÓN: CREACIÓN DE RECETAS CON DESPLEGABLE -->
+            <section class="card custom-recipe-card">
+                <div class="section-header-flex">
+                    <h2>👨‍🍳 Creador & Analizador de Recetas</h2>
+                    <select id="recipe-mode-select" class="select-sm">
+                        <option value="manual">Modo Manual / Improvisado</option>
+                        <option value="ia">Modo Inteligente (IA con Despensa)</option>
+                    </select>
+                </div>
 
-    <!-- PESTAÑA 3: RUTINAS -->
-    <main id="tab-fitness" class="tab-content">
-      <section class="card search-card">
-        <h2>🔍 Explorador de Actividades & Ejercicios</h2>
-        <div class="search-box-group">
-          <input type="text" id="activity-search-input" class="search-input" placeholder="Buscar: Pádel, Fútbol, Sentadilla, Press...">
-          <div id="search-results" class="search-results-box"></div>
-        </div>
-      </section>
+                <!-- Sub-vista Manual -->
+                <div id="recipe-mode-manual-view" class="recipe-sub-view">
+                    <p class="modal-sub">Escribe una receta improvisada para analizar sus macros y añadirla a tus menús.
+                    </p>
+                    <form id="create-recipe-form">
+                        <div class="form-group">
+                            <label for="recipe-title">Nombre de la receta:</label>
+                            <input type="text" id="recipe-title" placeholder="Ej: Ensalada César Casera Fitness">
+                        </div>
+                        <div class="form-group">
+                            <label for="recipe-ingredients">Ingredientes utilizados:</label>
+                            <input type="text" id="recipe-ingredients"
+                                placeholder="Ej: Lechuga, tomate, pollo a la plancha...">
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="recipe-kcal">Calorías aprox (kcal):</label>
+                                <input type="number" id="recipe-kcal" placeholder="Ej: 450">
+                            </div>
+                            <div class="form-group">
+                                <label for="recipe-protein">Proteína aprox (g):</label>
+                                <input type="number" id="recipe-protein" placeholder="Ej: 35">
+                            </div>
+                        </div>
+                        <button type="submit" class="btn-primary" style="margin-top: 6px;">🧠 Analizar y Guardar
+                            Receta</button>
+                    </form>
+                </div>
 
-      <section class="card routine-config-card">
-        <h2>⚙️ Creador de Rutina Semanal</h2>
-        <div class="form-group">
-          <label for="workout-focus">Enfoque Principal:</label>
-          <select id="workout-focus">
-            <option value="fullbody">Full Body (Cuerpo Completo)</option>
-            <option value="ppl">Push / Pull / Legs</option>
-            <option value="torso_pierna">Torso / Pierna Clásico</option>
-            <option value="chest_arms">Pecho, Hombro & Brazos</option>
-          </select>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label for="workout-days-week">Días / Semana:</label>
-            <select id="workout-days-week">
-              <option value="3">3 días</option>
-              <option value="4" selected>4 días</option>
-              <option value="5">5 días</option>
-              <option value="6">6 días</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label for="workout-location">Lugar:</label>
-            <select id="workout-location">
-              <option value="gym" selected>Gimnasio</option>
-              <option value="home">Casa / Mancuernas</option>
-            </select>
-          </div>
-        </div>
-        <button id="btn-generate-routine" class="btn-primary" style="margin-top: 4px;">Actualizar Rutina Semanal</button>
-      </section>
+                <!-- Sub-vista IA (Usa Despensa) -->
+                <div id="recipe-mode-ia-view" class="recipe-sub-view" style="display: none;">
+                    <p class="modal-sub">Selecciona ingredientes de tu despensa para que el sistema proponga el plato y
+                        macros.</p>
+                    <div id="recipe-builder-selector"
+                        style="margin-bottom: 12px; display: flex; gap: 6px; flex-wrap: wrap;"></div>
+                    <button type="button" id="btn-generate-recipe" class="btn-primary" style="width: 100%;">✨ Generar
+                        con Ingredientes Seleccionados</button>
+                </div>
 
-      <section class="card routine-display-card">
-        <h2 id="routine-title">Tu Plan Semanal</h2>
-        <div id="weekly-routine-container" class="routine-accordion"></div>
-      </section>
+                <div id="recipe-output-box" class="recipe-analysis-box" style="display: none;">
+                    <h3 id="output-recipe-title" style="color: var(--accent-blue); font-size: 0.95rem;"></h3>
+                    <p id="output-recipe-desc" style="font-size: 0.84rem; margin: 6px 0 10px;"></p>
+                    <div id="output-recipe-macros" style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 10px;">
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" id="btn-save-generated-recipe" class="btn-primary"
+                            style="padding: 10px;">📥 Guardar en Mis Recetas</button>
+                        <button type="button" id="btn-close-analysis" class="btn-secondary"
+                            style="padding: 10px;">Descartar</button>
+                    </div>
+                </div>
+            </section>
 
-      <section class="card chart-card">
-        <div class="section-header-flex">
-          <h2>📈 Progreso Semanal de Entrenamientos</h2>
-          <select id="workout-chart-metric-select" class="select-sm">
-            <option value="kg">Kg Levantados</option>
-            <option value="kcal">Kcal Quemadas</option>
-            <option value="reps">Repeticiones Totales</option>
-          </select>
-        </div>
-        <canvas id="volumeChart"></canvas>
-      </section>
+            <!-- BLOQUE UNIFICADO: DESPENSA Y CATÁLOGO DE ALIMENTOS -->
+            <section class="card pantry-card">
+                <h2>🥦 Despensa e Ingredientes Guardados</h2>
+                <p class="modal-sub">Añade tus alimentos base con sus calorías y proteínas para usarlos en el creador de
+                    recetas.</p>
 
-      <section class="card chart-card">
-        <h2>Pasos Semanales (Apple Watch)</h2>
-        <canvas id="stepsChart"></canvas>
-      </section>
+                <form id="ingredient-form" style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px;">
+                    <input type="text" id="ing-name" placeholder="Nombre (ej: Arroz basmati)" required style="flex: 2;">
+                    <input type="number" id="ing-weight" placeholder="Peso (g)" required style="flex: 1;">
+                    <input type="number" id="ing-cal" placeholder="Kcal" required style="flex: 1;">
+                    <input type="number" id="ing-prot" placeholder="Proteína (g)" required style="flex: 1;">
+                    <button type="submit" class="btn-primary" style="flex: 1;">+ Añadir</button>
+                </form>
+                <div id="ingredients-list" class="pill-container"
+                    style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px;"></div>
 
-      <section class="card workouts-card">
-        <h2>⚽ Sesiones y Deportes Registrados</h2>
-        <div id="workouts-list" class="readings-container">
-          <p class="empty-msg">No hay sesiones registradas todavía.</p>
-        </div>
-      </section>
-    </main>
+                <!-- Buscador Catálogo Mercadona Justo Abajo -->
+                <div class="search-box-group" style="border-top: 1px solid var(--card-border); padding-top: 14px;">
+                    <label style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 6px; display: block;">🔍
+                        Catálogo Rápido (Mercadona / Fitness):</label>
+                    <input type="text" id="food-search-input" class="search-input"
+                        placeholder="Buscar: Queso batido, Avena, Pavo Hacendado...">
+                    <div id="food-search-results" class="search-results-box"></div>
+                </div>
+            </section>
 
-    <!-- PESTAÑA 4: SALUD -->
-    <main id="tab-health" class="tab-content">
-      <section class="card diagnosis-card">
-        <h2>🩺 Monitor Cardiovascular & Autonómico</h2>
-        <div id="bpm-diagnostic-container" class="diagnostic-box">
-          <p>Analizando registros del Apple Watch...</p>
-        </div>
-      </section>
+            <!-- RECETARIO GUARDADO (ÚNICO) -->
+            <section class="card saved-recipes-card">
+                <div class="section-header-flex">
+                    <h2>📖 Mis Recetas Guardadas</h2>
+                    <button type="button" id="btn-open-manual-recipe" class="btn-primary"
+                        style="padding: 6px 12px; font-size: 0.85rem;">+ Nueva Receta</button>
+                </div>
+                <div id="saved-recipes-container" class="meals-accordion" style="margin-top: 10px;">
+                    <p class="empty-msg" style="color: var(--text-muted); font-size: 0.85rem;">No tienes recetas
+                        guardadas todavía.</p>
+                </div>
+            </section>
 
-      <section class="card chart-card">
-        <h2>Evolución Frecuencia en Reposo (BPM)</h2>
-        <canvas id="bpmHealthChart"></canvas>
-      </section>
+            <!-- MENÚS Y COMIDAS EDITABLES -->
+            <section class="card diet-menu-card">
+                <div class="section-header-flex">
+                    <h2>🍽️ Distribución de Comidas</h2>
+                    <select id="diet-preference-select" class="select-sm">
+                        <option value="balanceada">Dieta Balanceada</option>
+                        <option value="alta_proteina">Definición / Alta Proteína</option>
+                        <option value="volumen">Volumen Limpio / Rendimiento</option>
+                        <option value="mediterranea">Mediterránea Tradicional</option>
+                        <option value="lowcarb">Baja en Carbohidratos (Low Carb)</option>
+                    </select>
+                </div>
+                <div id="diet-meals-container" class="meals-accordion"></div>
+            </section>
+        </main>
 
-      <section class="card interactive-card">
-        <h2>🧘 Descompresión & Movilidad Guiada</h2>
-        <div class="form-group">
-          <label for="relax-routine-type">Elige protocolo:</label>
-          <select id="relax-routine-type">
-            <option value="breath">Respiración Vagal 4-7-8 (Bajar pulso)</option>
-            <option value="neck">Movilidad Cervical & Trapecio (Alivio estrés)</option>
-          </select>
-        </div>
-        <button id="btn-start-relax" class="btn-primary">Comenzar Sesión Guiada (1 min)</button>
-        <div id="relax-guide-box" style="display: none; text-align: center; margin-top: 14px;">
-          <h3 id="relax-status" style="font-size: 1.2rem; color: var(--accent-blue);">Preparado...</h3>
-          <span id="relax-timer" style="font-size: 2.2rem; font-weight: 800; color: var(--text-main);">10</span>
-        </div>
-      </section>
+        <!-- PESTAÑA 3: RUTINAS -->
+        <main id="tab-fitness" class="tab-content">
+            <section class="card search-card">
+                <h2>🔍 Explorador de Actividades & Ejercicios</h2>
+                <div class="search-box-group">
+                    <input type="text" id="activity-search-input" class="search-input"
+                        placeholder="Buscar: Pádel, Fútbol, Sentadilla, Press...">
+                    <div id="search-results" class="search-results-box"></div>
+                </div>
+            </section>
 
-      <section class="card zone-card">
-        <h2>🎯 Zonas de Frecuencia Cardíaca</h2>
-        <div class="zones-container" id="heart-zones-box"></div>
-      </section>
-    </main>
+            <section class="card routine-config-card">
+                <h2>⚙️ Creador de Rutina Semanal</h2>
+                <div class="form-group">
+                    <label for="workout-focus">Enfoque Principal:</label>
+                    <select id="workout-focus">
+                        <option value="fullbody">Full Body (Cuerpo Completo)</option>
+                        <option value="ppl">Push / Pull / Legs</option>
+                        <option value="torso_pierna">Torso / Pierna Clásico</option>
+                        <option value="chest_arms">Pecho, Hombro & Brazos</option>
+                    </select>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="workout-days-week">Días / Semana:</label>
+                        <select id="workout-days-week">
+                            <option value="3">3 días</option>
+                            <option value="4" selected>4 días</option>
+                            <option value="5">5 días</option>
+                            <option value="6">6 días</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="workout-location">Lugar:</label>
+                        <select id="workout-location">
+                            <option value="gym" selected>Gimnasio</option>
+                            <option value="home">Casa / Mancuernas</option>
+                        </select>
+                    </div>
+                </div>
+                <button id="btn-generate-routine" class="btn-primary" style="margin-top: 4px;">Actualizar Rutina
+                    Semanal</button>
+            </section>
 
-    <!-- PESTAÑA 5: HÁBITOS -->
-    <main id="tab-habits" class="tab-content">
-      <section class="card timer-card">
-        <h2>Tiempo Libre de Nicotina</h2>
-        <div id="clean-timer" class="timer-display">0d 00h 00m 00s</div>
-        <div class="timer-actions">
-          <button id="btn-craving" class="btn-craving-sm">⚡ ¡Tengo Urgencia!</button>
-          <button id="btn-reset-timer" class="btn-secondary-sm">Registrar Recaída</button>
-        </div>
-      </section>
+            <section class="card routine-display-card">
+                <h2 id="routine-title">Tu Plan Semanal</h2>
+                <div id="weekly-routine-container" class="routine-accordion"></div>
+            </section>
 
-      <section class="card recovery-card">
-        <h2>🧬 Recuperación Fisiológica Temporal</h2>
-        <div class="recovery-item">
-          <div class="recovery-header"><span>Oxigenación en Sangre & Monóxido (24h)</span><strong id="prog-ox-val">0%</strong></div>
-          <div class="progress-bar-bg"><div id="prog-ox-bar" class="progress-bar-fill" style="width: 0%;"></div></div>
-        </div>
-        <div class="recovery-item" style="margin-top: 10px;">
-          <div class="recovery-header"><span>Regeneración Cilios Pulmonares (30 días)</span><strong id="prog-cilia-val">0%</strong></div>
-          <div class="progress-bar-bg"><div id="prog-cilia-bar" class="progress-bar-fill fill-green" style="width: 0%;"></div></div>
-        </div>
-        <div class="recovery-item" style="margin-top: 10px;">
-          <div class="recovery-header"><span>Receptores Dopaminérgicos (90 días)</span><strong id="prog-dop-val">0%</strong></div>
-          <div class="progress-bar-bg"><div id="prog-dop-bar" class="progress-bar-fill" style="width: 0%; background: #f59e0b;"></div></div>
-        </div>
-      </section>
+            <section class="card chart-card">
+                <div class="section-header-flex">
+                    <h2>📈 Progreso Semanal de Entrenamientos</h2>
+                    <select id="workout-chart-metric-select" class="select-sm">
+                        <option value="kg">Kg Levantados</option>
+                        <option value="kcal">Kcal Quemadas</option>
+                        <option value="reps">Repeticiones Totales</option>
+                    </select>
+                </div>
+                <canvas id="volumeChart"></canvas>
+            </section>
 
-      <section class="card habit-config-card">
-        <h2>⚙️ Configuración de Ahorro</h2>
-        <div class="form-group">
-          <label for="habit-product-type">Producto consumido habitualmente:</label>
-          <select id="habit-product-type">
-            <option value="bombo">Líquido / Sales Bombo + Resistencia (~1.70 €/día)</option>
-            <option value="disposable">Vapes Desechables 8€ (~4.00 €/día)</option>
-            <option value="tobacco">Tabaco Tradicional (~5.50 €/día)</option>
-            <option value="custom">Gasto personalizado diario...</option>
-          </select>
-        </div>
-        <div id="custom-cost-group" class="form-group" style="display: none;">
-          <label for="custom-daily-cost">Coste diario aproximado (€):</label>
-          <input type="number" step="0.1" id="custom-daily-cost" placeholder="Ej: 2.50">
-        </div>
-      </section>
+            <section class="card chart-card">
+                <h2>Pasos Semanales (Apple Watch)</h2>
+                <canvas id="stepsChart"></canvas>
+            </section>
 
-      <section class="card summary-card">
-        <h2>Balance Financiero</h2>
-        <div class="metrics-grid">
-          <div class="metric-box"><span class="metric-title">Dinero Ahorrado</span><span id="metric-money-saved" class="metric-value">0.00 €</span></div>
-          <div class="metric-box"><span class="metric-title">Brotes Superados</span><span id="metric-cravings-count" class="metric-value">0</span></div>
-        </div>
-      </section>
-    </main>
+            <section class="card workouts-card">
+                <h2>⚽ Sesiones y Deportes Registrados</h2>
+                <div id="workouts-list" class="readings-container">
+                    <p class="empty-msg">No hay sesiones registradas todavía.</p>
+                </div>
+            </section>
+        </main>
 
-    <!-- PESTAÑA 6: REGISTRAR MANUAL -->
-    <main id="tab-log" class="tab-content">
-      <section class="card form-card">
-        <h2>📝 Registro Manual</h2>
-        <form id="tracker-form">
-          <div class="form-group">
-            <label for="log-type">Tipo de entrada:</label>
-            <select id="log-type">
-              <option value="peso">Peso Corporal (kg)</option>
-              <option value="estado">Chequeo de estado diario</option>
-              <option value="vapeo">He vapeado (Sesión)</option>
-            </select>
-          </div>
-          <div id="form-weight-group" class="form-group">
-            <label for="input-weight">Peso actual (kg):</label>
-            <input type="number" step="0.1" id="input-weight" placeholder="Ej: 78.5">
-          </div>
-          <div id="form-bpm-group" class="form-group" style="display: none;">
-            <label for="bpm">Pulsaciones actuales (BPM):</label>
-            <input type="number" id="bpm" placeholder="Ej: 75">
-          </div>
-          <div id="vape-extra-fields" style="display: none;">
-            <div class="form-group">
-              <label for="bpm-after">Pulsaciones tras vapear:</label>
-              <input type="number" id="bpm-after" placeholder="Ej: 90">
-            </div>
-            <div class="form-group">
-              <label for="trigger">Detonante:</label>
-              <select id="trigger">
-                <option value="Estrés">Estrés / Ansiedad</option>
-                <option value="Aburrimiento">Aburrimiento</option>
-                <option value="Social">Social</option>
-                <option value="Hábito">Hábito automático</option>
-              </select>
-            </div>
-          </div>
-          <div class="form-group">
-            <label for="mood">Nivel de Energía / Ánimo (1 al 10): <span id="mood-val">5</span></label>
-            <input type="range" id="mood" min="1" max="10" value="5">
-          </div>
-          <div class="form-group">
-            <label for="notes">Notas adicionales:</label>
-            <input type="text" id="notes" placeholder="Ej: Comida, sensaciones, gimnasio...">
-          </div>
-          <button type="submit" class="btn-primary">Guardar Datos</button>
-        </form>
-      </section>
-    </main>
-  </div>
+        <!-- PESTAÑA 4: SALUD -->
+        <main id="tab-health" class="tab-content">
+            <section class="card diagnosis-card">
+                <h2>🩺 Monitor Cardiovascular & Autonómico</h2>
+                <div id="bpm-diagnostic-container" class="diagnostic-box">
+                    <p>Analizando registros del Apple Watch...</p>
+                </div>
+            </section>
 
-  <!-- MODAL DE AUTENTICACIÓN -->
-  <div id="auth-modal" class="modal-overlay">
-    <div class="modal-card">
-      <h2 id="auth-modal-title">Iniciar Sesión / Registro</h2>
-      <p class="modal-sub">Accede a tus datos en cualquier dispositivo o compártelo con un amigo.</p>
-      <form id="auth-form" autocomplete="off">
-        <div class="form-group">
-          <label for="auth-email">Correo Electrónico:</label>
-          <input type="email" id="auth-email" required placeholder="tu@email.com">
-        </div>
-        <div class="form-group">
-          <label for="auth-password">Contraseña:</label>
-          <input type="password" id="auth-password" required placeholder="........">
-        </div>
-        <div class="modal-actions" style="margin-top: 12px;">
-          <button type="button" id="btn-auth-signin" class="btn-primary">Iniciar Sesión</button>
-          <button type="button" id="btn-auth-signup" class="btn-secondary">Crear Cuenta</button>
-        </div>
-        <button type="button" id="btn-auth-logout" class="btn-secondary" style="margin-top: 10px; width: 100%; display: none; color: #ef4444;">Cerrar Sesión</button>
-        <button type="button" id="btn-close-auth" class="btn-secondary" style="margin-top: 8px; width: 100%;">Cerrar</button>
-      </form>
+            <section class="card chart-card">
+                <h2>Evolución Frecuencia en Reposo (BPM)</h2>
+                <canvas id="bpmHealthChart"></canvas>
+            </section>
+
+            <section class="card interactive-card">
+                <h2>🧘 Descompresión & Movilidad Guiada</h2>
+                <div class="form-group">
+                    <label for="relax-routine-type">Elige protocolo:</label>
+                    <select id="relax-routine-type">
+                        <option value="breath">Respiración Vagal 4-7-8 (Bajar pulso)</option>
+                        <option value="coherence">Coherencia Cardíaca 5-5 (Calma y Equilibrio)</option>
+                        <option value="muscle">Escaneo Corporal & Relajación (Alivio Tensión)</option>
+                        <option value="box">Respiración Cuadrada / Box Breathing (Enfoque)</option>
+                        <option value="neck">Movilidad Cervical & Trapecio (Estrés)</option>
+                    </select>
+                </div>
+                <button id="btn-start-relax" class="btn-primary">Comenzar Sesión Guiada (1 min)</button>
+                <div id="relax-guide-box" style="display: none; text-align: center; margin-top: 14px;">
+                    <h3 id="relax-status" style="font-size: 1.2rem; color: var(--accent-blue);">Preparado...</h3>
+                    <span id="relax-timer"
+                        style="font-size: 2.2rem; font-weight: 800; color: var(--text-main);">10</span>
+                </div>
+            </section>
+
+            <section class="card zone-card">
+                <h2>🎯 Zonas de Frecuencia Cardíaca</h2>
+                <div class="zones-container" id="heart-zones-box"></div>
+            </section>
+        </main>
+
+        <!-- PESTAÑA 5: HÁBITOS -->
+        <main id="tab-habits" class="tab-content">
+            <section class="card timer-card">
+                <h2>Tiempo Libre de Nicotina</h2>
+                <div id="clean-timer" class="timer-display">0d 00h 00m 00s</div>
+                <div class="timer-actions">
+                    <button id="btn-craving" class="btn-craving-sm">⚡ ¡Tengo Urgencia!</button>
+                    <button id="btn-reset-timer" class="btn-secondary-sm">Registrar Recaída</button>
+                </div>
+            </section>
+
+            <section class="card recovery-card">
+                <h2>🧬 Recuperación Fisiológica Temporal</h2>
+                <div class="recovery-item">
+                    <div class="recovery-header"><span>Oxigenación en Sangre & Monóxido (24h)</span><strong
+                            id="prog-ox-val">0%</strong></div>
+                    <div class="progress-bar-bg">
+                        <div id="prog-ox-bar" class="progress-bar-fill" style="width: 0%;"></div>
+                    </div>
+                </div>
+                <div class="recovery-item" style="margin-top: 10px;">
+                    <div class="recovery-header"><span>Regeneración Cilios Pulmonares (30 días)</span><strong
+                            id="prog-cilia-val">0%</strong></div>
+                    <div class="progress-bar-bg">
+                        <div id="prog-cilia-bar" class="progress-bar-fill fill-green" style="width: 0%;"></div>
+                    </div>
+                </div>
+                <div class="recovery-item" style="margin-top: 10px;">
+                    <div class="recovery-header"><span>Receptores Dopaminérgicos (90 días)</span><strong
+                            id="prog-dop-val">0%</strong></div>
+                    <div class="progress-bar-bg">
+                        <div id="prog-dop-bar" class="progress-bar-fill" style="width: 0%; background: #f59e0b;"></div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="card habit-config-card">
+                <h2>⚙️ Configuración de Ahorro</h2>
+                <div class="form-group">
+                    <label for="habit-product-type">Producto consumido habitualmente:</label>
+                    <select id="habit-product-type">
+                        <option value="bombo">Líquido / Sales Bombo + Resistencia (~1.70 €/día)</option>
+                        <option value="disposable">Vapes Desechables 8€ (~4.00 €/día)</option>
+                        <option value="tobacco">Tabaco Tradicional (~5.50 €/día)</option>
+                        <option value="custom">Gasto personalizado diario...</option>
+                    </select>
+                </div>
+                <div id="custom-cost-group" class="form-group" style="display: none;">
+                    <label for="custom-daily-cost">Coste diario aproximado (€):</label>
+                    <input type="number" step="0.1" id="custom-daily-cost" placeholder="Ej: 2.50">
+                </div>
+            </section>
+
+            <section class="card summary-card">
+                <h2>Balance Financiero</h2>
+                <div class="metrics-grid">
+                    <div class="metric-box"><span class="metric-title">Dinero Ahorrado</span><span
+                            id="metric-money-saved" class="metric-value">0.00 €</span></div>
+                    <div class="metric-box"><span class="metric-title">Brotes Superados</span><span
+                            id="metric-cravings-count" class="metric-value">0</span></div>
+                </div>
+            </section>
+        </main>
+
+        <!-- PESTAÑA 6: REGISTRAR MANUAL -->
+        <main id="tab-log" class="tab-content">
+            <section class="card form-card">
+                <h2>📝 Registro Manual</h2>
+                <form id="tracker-form">
+                    <div class="form-group">
+                        <label for="log-type">Tipo de entrada:</label>
+                        <select id="log-type">
+                            <option value="peso">Peso Corporal (kg)</option>
+                            <option value="estado">Chequeo de estado diario</option>
+                            <option value="vapeo">He vapeado (Sesión)</option>
+                        </select>
+                    </div>
+                    <div id="form-weight-group" class="form-group">
+                        <label for="input-weight">Peso actual (kg):</label>
+                        <input type="number" step="0.1" id="input-weight" placeholder="Ej: 78.5">
+                    </div>
+                    <div id="form-bpm-group" class="form-group" style="display: none;">
+                        <label for="bpm">Pulsaciones actuales (BPM):</label>
+                        <input type="number" id="bpm" placeholder="Ej: 75">
+                    </div>
+                    <div id="vape-extra-fields" style="display: none;">
+                        <div class="form-group">
+                            <label for="bpm-after">Pulsaciones tras vapear:</label>
+                            <input type="number" id="bpm-after" placeholder="Ej: 90">
+                        </div>
+                        <div class="form-group">
+                            <label for="trigger">Detonante:</label>
+                            <select id="trigger">
+                                <option value="Estrés">Estrés / Ansiedad</option>
+                                <option value="Aburrimiento">Aburrimiento</option>
+                                <option value="Social">Social</option>
+                                <option value="Hábito">Hábito automático</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="mood">Nivel de Energía / Ánimo (1 al 10): <span id="mood-val">5</span></label>
+                        <input type="range" id="mood" min="1" max="10" value="5">
+                    </div>
+                    <div class="form-group">
+                        <label for="notes">Notas adicionales:</label>
+                        <input type="text" id="notes" placeholder="Ej: Comida, sensaciones, gimnasio...">
+                    </div>
+                    <button type="submit" class="btn-primary">Guardar Datos</button>
+                </form>
+            </section>
+        </main>
     </div>
-  </div>
 
-  <!-- MODAL DE CONFIGURACIÓN DEL PERFIL -->
-  <div id="profile-modal" class="modal-overlay">
-    <div class="modal-card">
-      <h2>⚙️ Configuración del Perfil & Dispositivos</h2>
-      <p class="modal-sub">Ajusta tus datos personales y dispositivos conectados.</p>
-      <form id="profile-form">
-        <div class="form-group">
-          <label for="prof-name">Nombre:</label>
-          <input type="text" id="prof-name" required placeholder="Tu nombre">
+    <!-- MODAL DE AUTENTICACIÓN -->
+    <div id="auth-modal" class="modal-overlay">
+        <div class="modal-card">
+            <h2 id="auth-modal-title">Iniciar Sesión / Registro</h2>
+            <p class="modal-sub">Accede a tus datos en cualquier dispositivo o compártelo con un amigo.</p>
+            <form id="auth-form" autocomplete="off">
+                <div class="form-group">
+                    <label for="auth-email">Correo Electrónico:</label>
+                    <input type="email" id="auth-email" required placeholder="tu@email.com">
+                </div>
+                <div class="form-group">
+                    <label for="auth-password">Contraseña:</label>
+                    <input type="password" id="auth-password" required placeholder="........">
+                </div>
+                <div class="modal-actions" style="margin-top: 12px;">
+                    <button type="button" id="btn-auth-signin" class="btn-primary">Iniciar Sesión</button>
+                    <button type="button" id="btn-auth-signup" class="btn-secondary">Crear Cuenta</button>
+                </div>
+                <button type="button" id="btn-auth-logout" class="btn-secondary"
+                    style="margin-top: 10px; width: 100%; display: none; color: #ef4444;">Cerrar Sesión</button>
+                <button type="button" id="btn-close-auth" class="btn-secondary"
+                    style="margin-top: 8px; width: 100%;">Cerrar</button>
+            </form>
         </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label for="prof-age">Edad:</label>
-            <input type="number" id="prof-age" required placeholder="Ej: 24">
-          </div>
-          <div class="form-group">
-            <label for="prof-height">Altura (cm):</label>
-            <input type="number" id="prof-height" required placeholder="Ej: 178">
-          </div>
-        </div>
-        <div class="form-group">
-          <label for="prof-weight">Peso Actual (kg):</label>
-          <input type="number" step="0.1" id="prof-weight" required placeholder="Ej: 80.0">
-        </div>
-        <div class="form-group">
-          <label for="prof-has-watch">Dispositivo de Salud (Apple Watch):</label>
-          <select id="prof-has-watch">
-            <option value="true" selected>Sí, tengo Apple Watch (Medir pulso y pasos)</option>
-            <option value="false">No tengo Smartwatch (Modo Estándar)</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label for="prof-weigh-freq">Frecuencia de Recordatorio de Pesaje:</label>
-          <select id="prof-weigh-freq">
-            <option value="daily">Diariamente al abrir la web</option>
-            <option value="3days" selected>Cada 3 días</option>
-            <option value="weekly">Semanalmente (Cada 7 días)</option>
-            <option value="never">Desactivar recordatorio automático</option>
-          </select>
-        </div>
-        <div class="goal-slider-box">
-          <label for="prof-target-loss">Kilos a perder: <strong id="val-target-loss">4</strong> kg</label>
-          <input type="range" id="prof-target-loss" min="1" max="25" value="4">
-          <label for="prof-weeks" style="margin-top: 10px;">En cuántas semanas: <strong id="val-weeks">8</strong> semanas</label>
-          <input type="range" id="prof-weeks" min="2" max="24" value="8">
-          <div class="calculated-plan" id="preview-plan"></div>
-        </div>
-        <div class="modal-actions">
-          <button type="button" id="btn-close-modal" class="btn-secondary">Cerrar</button>
-          <button type="submit" class="btn-primary">Guardar Ajustes</button>
-        </div>
-      </form>
     </div>
-  </div>
 
-  <!-- MODAL EMERGENTE DE BIENVENIDA / CHECK-IN RÁPIDO -->
-  <div id="checkin-modal" class="modal-overlay">
-    <div class="modal-card checkin-card">
-      <div class="checkin-header">
-        <span class="checkin-badge">⚡ Check-in Diario</span>
-        <h2 id="checkin-greeting">¡Hola, Atleta!</h2>
-        <p class="modal-sub">¿Quieres registrar tus datos de hoy para actualizar tu plan calórico y salud?</p>
-      </div>
-      <form id="checkin-form">
-        <div class="form-row">
-          <div class="form-group">
-            <label for="checkin-weight">⚖️ Peso (kg):</label>
-            <input type="number" step="0.1" id="checkin-weight" placeholder="Ej: 79.5">
-          </div>
-          <div class="form-group">
-            <label for="checkin-bpm">❤️ Pulso (BPM):</label>
-            <input type="number" id="checkin-bpm" placeholder="Ej: 72">
-          </div>
+    <!-- MODAL DE CONFIGURACIÓN DEL PERFIL -->
+    <div id="profile-modal" class="modal-overlay">
+        <div class="modal-card">
+            <h2>⚙️ Configuración del Perfil & Dispositivos</h2>
+            <p class="modal-sub">Ajusta tus datos personales y dispositivos conectados.</p>
+            <form id="profile-form">
+                <div class="form-group">
+                    <label for="prof-name">Nombre:</label>
+                    <input type="text" id="prof-name" required placeholder="Tu nombre">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="prof-age">Edad:</label>
+                        <input type="number" id="prof-age" required placeholder="Ej: 24">
+                    </div>
+                    <div class="form-group">
+                        <label for="prof-height">Altura (cm):</label>
+                        <input type="number" id="prof-height" required placeholder="Ej: 178">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="prof-weight">Peso Actual (kg):</label>
+                    <input type="number" step="0.1" id="prof-weight" required placeholder="Ej: 80.0">
+                </div>
+                <div class="form-group">
+                    <label for="prof-has-watch">Dispositivo de Salud (Apple Watch):</label>
+                    <select id="prof-has-watch">
+                        <option value="true" selected>Sí, tengo Apple Watch (Medir pulso y pasos)</option>
+                        <option value="false">No tengo Smartwatch (Modo Estándar)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="prof-weigh-freq">Frecuencia de Recordatorio de Pesaje:</label>
+                    <select id="prof-weigh-freq">
+                        <option value="daily">Diariamente al abrir la web</option>
+                        <option value="3days" selected>Cada 3 días</option>
+                        <option value="weekly">Semanalmente (Cada 7 días)</option>
+                        <option value="never">Desactivar recordatorio automático</option>
+                    </select>
+                </div>
+                <div class="goal-slider-box">
+                    <label for="prof-target-loss">Kilos a perder: <strong id="val-target-loss">4</strong> kg</label>
+                    <input type="range" id="prof-target-loss" min="1" max="25" value="4">
+                    <label for="prof-weeks" style="margin-top: 10px;">En cuántas semanas: <strong
+                            id="val-weeks">8</strong> semanas</label>
+                    <input type="range" id="prof-weeks" min="2" max="24" value="8">
+                    <div class="calculated-plan" id="preview-plan"></div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" id="btn-close-modal" class="btn-secondary">Cerrar</button>
+                    <button type="submit" class="btn-primary">Guardar Ajustes</button>
+                </div>
+            </form>
         </div>
-        <div class="form-group">
-          <label for="checkin-mood">⚡ Energía / Ánimo (1 al 10): <span id="checkin-mood-val">7</span></label>
-          <input type="range" id="checkin-mood" min="1" max="10" value="7">
-        </div>
-        <div class="checkin-actions">
-          <button type="submit" class="btn-primary">💾 Guardar y Entrar</button>
-          <button type="button" id="btn-skip-checkin" class="btn-secondary">Entrar directamente ➔</button>
-        </div>
-      </form>
     </div>
-  </div>
 
-  <!-- MODAL PARA AÑADIR RECETA MANUAL -->
-  <div id="manual-recipe-modal" class="modal-overlay">
-    <div class="modal-card">
-      <h3>📝 Añadir Receta Manual</h3>
-      <form id="manual-recipe-form" style="margin-top: 12px;">
-        <div class="form-group" style="margin-bottom: 10px;">
-          <label>Título de la Receta:</label>
-          <input type="text" id="man-title" placeholder="Ej: Pollo al curry fitness" required style="width: 100%; padding: 8px;">
+    <!-- MODAL EMERGENTE DE BIENVENIDA / CHECK-IN RÁPIDO -->
+    <div id="checkin-modal" class="modal-overlay">
+        <div class="modal-card checkin-card">
+            <div class="checkin-header">
+                <span class="checkin-badge">⚡ Check-in Diario</span>
+                <h2 id="checkin-greeting">¡Hola, Atleta!</h2>
+                <p class="modal-sub">¿Quieres registrar tus datos de hoy para actualizar tu plan calórico y salud?</p>
+            </div>
+            <form id="checkin-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="checkin-weight">⚖️ Peso (kg):</label>
+                        <input type="number" step="0.1" id="checkin-weight" placeholder="Ej: 79.5">
+                    </div>
+                    <div class="form-group">
+                        <label for="checkin-bpm">❤️ Pulso (BPM):</label>
+                        <input type="number" id="checkin-bpm" placeholder="Ej: 72">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="checkin-mood">⚡ Energía / Ánimo (1 al 10): <span id="checkin-mood-val">7</span></label>
+                    <input type="range" id="checkin-mood" min="1" max="10" value="7">
+                </div>
+                <div class="checkin-actions">
+                    <button type="submit" class="btn-primary">💾 Guardar y Entrar</button>
+                    <button type="button" id="btn-skip-checkin" class="btn-secondary">Entrar directamente ➔</button>
+                </div>
+            </form>
         </div>
-        <div class="form-group" style="margin-bottom: 10px;">
-          <label>Ingredientes y Pasos:</label>
-          <textarea id="man-desc" placeholder="Describe los pasos y cantidades..." rows="3" required style="width: 100%; padding: 8px;"></textarea>
-        </div>
-        <div class="form-row" style="display: flex; gap: 8px; margin-bottom: 15px;">
-          <div style="flex: 1;"><label>Calorías (kcal):</label><input type="number" id="man-cal" placeholder="500" required style="width: 100%; padding: 6px;"></div>
-          <div style="flex: 1;"><label>Proteínas (g):</label><input type="number" id="man-prot" placeholder="40" required style="width: 100%; padding: 6px;"></div>
-        </div>
-        <div style="display: flex; gap: 8px;">
-          <button type="submit" class="btn-primary" style="flex: 1;">Guardar Receta</button>
-          <button type="button" id="btn-close-manual-recipe" class="btn-secondary" style="flex: 1;">Cancelar</button>
-        </div>
-      </form>
     </div>
-  </div>
 
-  <script src="app.js?v=140"></script>
+    <!-- MODAL PARA AÑADIR RECETA MANUAL -->
+    <div id="manual-recipe-modal" class="modal-overlay">
+        <div class="modal-card">
+            <h3>📝 Añadir Receta Manual</h3>
+            <form id="manual-recipe-form" style="margin-top: 12px;">
+                <div class="form-group" style="margin-bottom: 10px;">
+                    <label>Título de la Receta:</label>
+                    <input type="text" id="man-title" placeholder="Ej: Pollo al curry fitness" required
+                        style="width: 100%; padding: 8px;">
+                </div>
+                <div class="form-group" style="margin-bottom: 10px;">
+                    <label>Ingredientes y Pasos:</label>
+                    <textarea id="man-desc" placeholder="Describe los pasos y cantidades..." rows="3" required
+                        style="width: 100%; padding: 8px;"></textarea>
+                </div>
+                <div class="form-row" style="display: flex; gap: 8px; margin-bottom: 15px;">
+                    <div style="flex: 1;"><label>Calorías (kcal):</label><input type="number" id="man-cal"
+                            placeholder="500" required style="width: 100%; padding: 6px;"></div>
+                    <div style="flex: 1;"><label>Proteínas (g):</label><input type="number" id="man-prot"
+                            placeholder="40" required style="width: 100%; padding: 6px;"></div>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                    <button type="submit" class="btn-primary" style="flex: 1;">Guardar Receta</button>
+                    <button type="button" id="btn-close-manual-recipe" class="btn-secondary"
+                        style="flex: 1;">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="app.js?v=140"></script>
 </body>
+
 </html>

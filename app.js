@@ -104,8 +104,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (stepsChartInstance) setTimeout(() => stepsChartInstance.resize(), 100);
         renderVolumeChart();
       }
-      if (btn.dataset.tab === 'tab-health' && bpmHealthChartInstance) {
-        setTimeout(() => bpmHealthChartInstance.resize(), 100);
+      if (btn.dataset.tab === 'tab-health') {
+        if (bpmHealthChartInstance) setTimeout(() => bpmHealthChartInstance.resize(), 100);
+        renderHeartZones(); // <--- ¡Aquí es donde debe ir!
       }
       if (btn.dataset.tab === 'tab-diet') {
         renderDietMeals();
@@ -119,6 +120,7 @@ document.addEventListener('DOMContentLoaded', () => {
   setupHabitConfig();
   setupChecklist();
   setupRelaxProtocols();
+  renderHeartZones()
   setupRoutineSystem();
   setupSearchEngine();
   setupFoodSearchEngine();
@@ -1177,7 +1179,7 @@ function setupRelaxProtocols() {
       let count = 4;
       statusEl.innerText = "Inhala lentamente por la nariz...";
       statusEl.style.color = "#38bdf8";
-      const breathInterval = setInterval(() => {
+      const interval = setInterval(() => {
         timerEl.innerText = count;
         count--;
         if (count < 0) {
@@ -1186,35 +1188,73 @@ function setupRelaxProtocols() {
           else { phase = 'inhale'; count = 4; statusEl.innerText = "Inhala de nuevo..."; statusEl.style.color = "#38bdf8"; }
         }
       }, 1000);
-      setTimeout(() => {
-        clearInterval(breathInterval);
-        guideBox.style.display = 'none';
-        btn.style.display = 'block';
-        alert('¡Sesión 4-7-8 completada!');
-      }, 60000);
-    } else {
-      const neckSteps = ["Gira a la derecha (15s)", "Gira a la izquierda (15s)", "Oreja al hombro derecho (15s)", "Oreja al hombro izquierdo (15s)"];
-      let stepIdx = 0;
-      let count = 15;
-      statusEl.innerText = neckSteps[stepIdx];
+      setTimeout(() => { clearInterval(interval); guideBox.style.display = 'none'; btn.style.display = 'block'; alert('¡Sesión 4-7-8 completada!'); }, 60000);
+
+    } else if (type === 'coherence') {
+      let inhale = true;
+      let count = 5;
+      statusEl.innerText = "Inhala profundo (5s)...";
       statusEl.style.color = "#38bdf8";
-      const neckInterval = setInterval(() => {
+      const interval = setInterval(() => {
         timerEl.innerText = count;
         count--;
         if (count < 0) {
-          stepIdx++;
-          if (stepIdx < neckSteps.length) {
-            count = 15;
-            statusEl.innerText = neckSteps[stepIdx];
-          }
+          inhale = !inhale;
+          count = 5;
+          statusEl.innerText = inhale ? "Inhala profundo (5s)..." : "Exhala lento (5s)...";
+          statusEl.style.color = inhale ? "#38bdf8" : "#10b981";
         }
       }, 1000);
-      setTimeout(() => {
-        clearInterval(neckInterval);
-        guideBox.style.display = 'none';
-        btn.style.display = 'block';
-        alert('¡Movilidad cervical completada!');
-      }, 62000);
+      setTimeout(() => { clearInterval(interval); guideBox.style.display = 'none'; btn.style.display = 'block'; alert('¡Coherencia cardíaca finalizada!'); }, 60000);
+
+    } else if (type === 'box') {
+      let step = 0;
+      let count = 4;
+      const stepsText = ["Inhala (4s)", "Mantén pulmones llenos (4s)", "Exhala suave (4s)", "Mantén vacío (4s)"];
+      statusEl.innerText = stepsText[0];
+      statusEl.style.color = "#38bdf8";
+      const interval = setInterval(() => {
+        timerEl.innerText = count;
+        count--;
+        if (count < 0) {
+          step = (step + 1) % 4;
+          count = 4;
+          statusEl.innerText = stepsText[step];
+        }
+      }, 1000);
+      setTimeout(() => { clearInterval(interval); guideBox.style.display = 'none'; btn.style.display = 'block'; alert('¡Box Breathing completado!'); }, 64000);
+
+    } else if (type === 'muscle') {
+      const steps = ["Relaja la mandíbula y la frente (15s)", "Baja los hombros y suelta los brazos (15s)", "Respira profundo aflojando el abdomen (15s)", "Cierra los ojos y descansa (15s)"];
+      let idx = 0;
+      let count = 15;
+      statusEl.innerText = steps[idx];
+      statusEl.style.color = "#10b981";
+      const interval = setInterval(() => {
+        timerEl.innerText = count;
+        count--;
+        if (count < 0) {
+          idx++;
+          if (idx < steps.length) { count = 15; statusEl.innerText = steps[idx]; }
+        }
+      }, 1000);
+      setTimeout(() => { clearInterval(interval); guideBox.style.display = 'none'; btn.style.display = 'block'; alert('¡Relajación muscular finalizada!'); }, 62000);
+
+    } else {
+      const neckSteps = ["Gira suavemente hacia la derecha (15s)", "Gira suavemente hacia la izquierda (15s)", "Oreja derecha al hombro (15s)", "Oreja izquierda al hombro (15s)"];
+      let idx = 0;
+      let count = 15;
+      statusEl.innerText = neckSteps[idx];
+      statusEl.style.color = "#38bdf8";
+      const interval = setInterval(() => {
+        timerEl.innerText = count;
+        count--;
+        if (count < 0) {
+          idx++;
+          if (idx < neckSteps.length) { count = 15; statusEl.innerText = neckSteps[idx]; }
+        }
+      }, 1000);
+      setTimeout(() => { clearInterval(interval); guideBox.style.display = 'none'; btn.style.display = 'block'; alert('¡Movilidad cervical completada!'); }, 62000);
     }
   });
 }
