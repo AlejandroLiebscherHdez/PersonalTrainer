@@ -884,6 +884,7 @@ function setupProfileModal() {
       weight: 80.0,
       targetLossKg: 4,
       weeks: 8,
+      hasWatch: true,
       weighFreq: "3days",
       habitType: "bombo",
       customDailyCost: 1.70,
@@ -900,6 +901,8 @@ function setupProfileModal() {
     document.getElementById('prof-age').value = userProfile.age;
     document.getElementById('prof-height').value = userProfile.height;
     document.getElementById('prof-weight').value = userProfile.weight;
+    const watchSelect = document.getElementById('prof-has-watch');
+    if (watchSelect) watchSelect.value = String(userProfile.hasWatch !== false);
     document.getElementById('prof-weigh-freq').value = userProfile.weighFreq || '3days';
     inLoss.value = userProfile.targetLossKg;
     inWeeks.value = userProfile.weeks;
@@ -912,12 +915,14 @@ function setupProfileModal() {
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
+    const watchSelect = document.getElementById('prof-has-watch');
     userProfile = {
       ...userProfile,
       name: document.getElementById('prof-name').value,
       age: Number(document.getElementById('prof-age').value),
       height: Number(document.getElementById('prof-height').value),
       weight: Number(document.getElementById('prof-weight').value),
+      hasWatch: watchSelect ? watchSelect.value === 'true' : true,
       weighFreq: document.getElementById('prof-weigh-freq').value,
       targetLossKg: Number(inLoss.value),
       weeks: Number(inWeeks.value)
@@ -928,6 +933,7 @@ function setupProfileModal() {
     document.getElementById('user-greeting').innerHTML = `${userProfile.name} <span>Trainer</span>`;
     document.getElementById('user-goal-subtitle').innerText = `Meta: Bajar ${userProfile.targetLossKg} kg en ${userProfile.weeks} semanas`;
     renderCoachEngine();
+    updateDashboardMetrics();
     renderHeartZones();
     renderDietMeals();
   });
@@ -1099,49 +1105,65 @@ function renderCoachEngine() {
   const daysTotal = userProfile.weeks * 7;
   const dailyDeficit = Math.round(totalDeficitNeeded / daysTotal);
 
-  const todayDateStr = new Date().toISOString().split('T')[0];
-  const todayHealth = Array.isArray(allHealth) ? allHealth.find(h => h.created_at.startsWith(todayDateStr)) : null;
-  const todayWorkouts = Array.isArray(allWorkouts) ? allWorkouts.filter(w => w.created_at.startsWith(todayDateStr)) : [];
-
-  const todaySteps = todayHealth && todayHealth.steps ? Number(todayHealth.steps) : 0;
-  const stepsBurn = Math.round(todaySteps * 0.04);
-  const workoutBurn = todayWorkouts.reduce((acc, w) => acc + (w.active_calories ? Number(w.active_calories) : 250), 0);
-  const totalBurn = stepsBurn + (todayWorkouts.length > 0 ? workoutBurn : 0);
-
-  const maintenanceBase = Math.round(bmr * 1.2);
-  const finalCalorieTarget = Math.max(1400, maintenanceBase + totalBurn - dailyDeficit);
-
-  targetCalEl.innerText = `${finalCalorieTarget} kcal`;
-
+  let totalBurn = 0;
   let adviceHTML = '';
-  if (todayWorkouts.length > 0) {
-    adviceHTML = `<p>🔥 <strong>¡Día de alto gasto!</strong> Gasto adicional de +${workoutBurn} kcal. Tu margen sube a <strong>${finalCalorieTarget} kcal</strong> para recuperar glucógeno sin ganar grasa.</p>`;
-  } else if (todaySteps > 8000) {
-    adviceHTML = `<p>🚶‍♂️ <strong>Gran volumen de pasos:</strong> Llevas ${todaySteps.toLocaleString()} pasos hoy (+${stepsBurn} kcal). Mantente en <strong>${finalCalorieTarget} kcal</strong>.</p>`;
+
+  if (userProfile.hasWatch) {
+    // Con Apple Watch
+    const todayDateStr = new Date().toISOString().split('T')[0];
+    const todayHealth = Array.isArray(allHealth) ? allHealth.find(h => h.created_at.startsWith(todayDateStr)) : null;
+    const todayWorkouts = Array.isArray(allWorkouts) ? allWorkouts.filter(w => w.created_at.startsWith(todayDateStr)) : [];
+
+    const todaySteps = todayHealth && todayHealth.steps ? Number(todayHealth.steps) : 0;
+    const stepsBurn = Math.round(todaySteps * 0.04);
+    const workoutBurn = todayWorkouts.reduce((acc, w) => acc + (w.active_calories ? Number(w.active_calories) : 250), 0);
+    totalBurn = stepsBurn + (todayWorkouts.length > 0 ? workoutBurn : 0);
+
+    const maintenanceBase = Math.round(bmr * 1.2);
+    const finalCalorieTarget = Math.max(1400, maintenanceBase + totalBurn - dailyDeficit);
+    targetCalEl.innerText = `${finalCalorieTarget} kcal`;
+
+    if (todayWorkouts.length > 0) {
+      adviceHTML = `<p>🔥 <strong>¡Día de alto gasto!</strong> Registraste entrenamientos en tu Apple Watch (+${workoutBurn} kcal). Tu margen sube a <strong>${finalCalorieTarget} kcal</strong>.</p>`;
+    } else if (todaySteps > 8000) {
+      adviceHTML = `<p>🚶‍♂️ <strong>Gran volumen de pasos:</strong> Llevas ${todaySteps.toLocaleString()} pasos hoy (+${stepsBurn} kcal). Mantente en <strong>${finalCalorieTarget} kcal</strong>.</p>`;
+    } else {
+      adviceHTML = `<p>🎯 <strong>Día de recuperación:</strong> Para cumplir tu meta de perder <strong>${userProfile.targetLossKg} kg en ${userProfile.weeks} semanas</strong>, consume <strong>${finalCalorieTarget} kcal</strong>.</p>`;
+    }
   } else {
-    adviceHTML = `<p>🎯 <strong>Día de recuperación:</strong> Para cumplir tu meta de perder <strong>${userProfile.targetLossKg} kg en ${userProfile.weeks} semanas</strong>, consume <strong>${finalCalorieTarget} kcal</strong>.</p>`;
+    // Sin Apple Watch (Modo Estándar / Tu amigo)
+    const maintenanceBase = Math.round(bmr * 1.375);
+    const finalCalorieTarget = Math.max(1400, maintenanceBase - dailyDeficit);
+    targetCalEl.innerText = `${finalCalorieTarget} kcal`;
+
+    adviceHTML = `<p>🎯 <strong>Plan Estándar Activo:</strong> Tu presupuesto calórico diario calculado para perder <strong>${userProfile.targetLossKg} kg en ${userProfile.weeks} semanas</strong> es de <strong>${finalCalorieTarget} kcal</strong>. Cumple con tu rutina del día en la pestaña <em>Rutinas</em>.</p>`;
   }
 
   container.innerHTML = adviceHTML;
 }
 
 function updateDashboardMetrics() {
-  const todayDateStr = new Date().toISOString().split('T')[0];
-  const todayHealth = Array.isArray(allHealth) ? allHealth.find(h => h.created_at.startsWith(todayDateStr)) : null;
-  const todayWorkouts = Array.isArray(allWorkouts) ? allWorkouts.filter(w => w.created_at.startsWith(todayDateStr)) : [];
-
-  const stepsEl = document.getElementById('metric-today-steps');
-  if (stepsEl) stepsEl.innerText = todayHealth && todayHealth.steps ? Number(todayHealth.steps).toLocaleString() : '0';
-
-  const burnEl = document.getElementById('metric-today-burn');
-  if (burnEl) {
-    const totalWkBurn = todayWorkouts.reduce((acc, w) => acc + (w.active_calories ? Number(w.active_calories) : 250), 0);
-    burnEl.innerText = `${totalWkBurn} kcal`;
-  }
-
   const bpmEl = document.getElementById('metric-resting-bpm');
-  if (bpmEl && Array.isArray(allHealth) && allHealth.length > 0) {
-    bpmEl.innerText = `${allHealth[allHealth.length - 1].resting_bpm || '--'} bpm`;
+  const stepsEl = document.getElementById('metric-today-steps');
+  const burnEl = document.getElementById('metric-today-burn');
+
+  if (!userProfile || !userProfile.hasWatch) {
+    if (bpmEl) bpmEl.innerText = "N/A (Sin reloj)";
+    if (stepsEl) stepsEl.innerText = "Modo manual";
+    if (burnEl) burnEl.innerText = "--";
+  } else {
+    const todayDateStr = new Date().toISOString().split('T')[0];
+    const todayHealth = Array.isArray(allHealth) ? allHealth.find(h => h.created_at.startsWith(todayDateStr)) : null;
+    const todayWorkouts = Array.isArray(allWorkouts) ? allWorkouts.filter(w => w.created_at.startsWith(todayDateStr)) : [];
+
+    if (stepsEl) stepsEl.innerText = todayHealth && todayHealth.steps ? Number(todayHealth.steps).toLocaleString() : '0';
+    if (burnEl) {
+      const totalWkBurn = todayWorkouts.reduce((acc, w) => acc + (w.active_calories ? Number(w.active_calories) : 250), 0);
+      burnEl.innerText = `${totalWkBurn} kcal`;
+    }
+    if (bpmEl && Array.isArray(allHealth) && allHealth.length > 0) {
+      bpmEl.innerText = `${allHealth[allHealth.length - 1].resting_bpm || '--'} bpm`;
+    }
   }
 
   const cravings = Array.isArray(allLogs) ? allLogs.filter(l => l.type === 'urgencia') : [];
