@@ -506,6 +506,68 @@
         </div>
       </form>
     </div>
+    <div id="profile-modal" class="modal-overlay">
+    <div class="modal-card">
+      <h2>⚙️ Configuración del Perfil & Dispositivos</h2>
+      <p class="modal-sub">Ajusta tus datos personales y dispositivos conectados.</p>
+      
+      <form id="profile-form">
+        <div class="form-group">
+          <label for="prof-name">Nombre:</label>
+          <input type="text" id="prof-name" required placeholder="Tu nombre">
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="prof-age">Edad:</label>
+            <input type="number" id="prof-age" required placeholder="Ej: 24">
+          </div>
+          <div class="form-group">
+            <label for="prof-height">Altura (cm):</label>
+            <input type="number" id="prof-height" required placeholder="Ej: 178">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="prof-weight">Peso Actual (kg):</label>
+          <input type="number" step="0.1" id="prof-weight" required placeholder="Ej: 80.0">
+        </div>
+
+        <div class="form-group">
+          <label for="prof-has-watch">⌚ Dispositivo de Salud (Apple Watch):</label>
+          <select id="prof-has-watch">
+            <option value="true" selected>✅ Sí, tengo Apple Watch (Medir pulso y pasos)</option>
+            <option value="false">❌ No tengo Smartwatch (Modo Estándar)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="prof-weigh-freq">Frecuencia de Recordatorio de Pesaje:</label>
+          <select id="prof-weigh-freq">
+            <option value="daily">Diariamente al abrir la web</option>
+            <option value="3days" selected>Cada 3 días</option>
+            <option value="weekly">Semanalmente (Cada 7 días)</option>
+            <option value="never">Desactivar recordatorio automático</option>
+          </select>
+        </div>
+
+        <div class="goal-slider-box">
+          <label for="prof-target-loss">Kilos a perder: <strong id="val-target-loss">4</strong> kg</label>
+          <input type="range" id="prof-target-loss" min="1" max="25" value="4">
+
+          <label for="prof-weeks" style="margin-top: 10px;">En cuántas semanas: <strong id="val-weeks">8</strong> semanas</label>
+          <input type="range" id="prof-weeks" min="2" max="24" value="8">
+
+          <div class="calculated-plan" id="preview-plan"></div>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" id="btn-close-modal" class="btn-secondary">Cerrar</button>
+          <button type="submit" class="btn-primary">Guardar Ajustes</button>
+        </div>
+      </form>
+    </div>
+  </div>
   </div>
 
   <script src="app.js?v=110"></script>
