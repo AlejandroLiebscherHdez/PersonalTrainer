@@ -727,3 +727,40 @@ input[type="range"] {
 .progress-bar-fill.fill-green {
   background: var(--accent-green);
 }
+
+/* Tarjeta de Análisis de Receta */
+.recipe-analysis-box {
+  background: #0b0f19;
+  border: 1px solid var(--accent-blue);
+  border-radius: 12px;
+  padding: 14px;
+  margin-top: 14px;
+  animation: fadeIn 0.25s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.recipe-saved-item {
+  background: #0b0f19;
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.recipe-saved-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.recipe-saved-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}

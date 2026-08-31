@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>PersonalTrainer AI | Fitness, Nutrition & Habits</title>
-  <link rel="stylesheet" href="style.css?v=100">
+  <link rel="stylesheet" href="style.css?v=110">
   <link rel="manifest" href="manifest.json">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -104,7 +104,7 @@
       </section>
     </main>
 
-    <!-- PESTAÑA 2: NUTRICIÓN, BUSCADOR DE ALIMENTOS Y DIETAS -->
+    <!-- PESTAÑA 2: NUTRICIÓN, RECETAS PROPIAS Y DIETA -->
     <main id="tab-diet" class="tab-content">
       <section class="card diet-macros-card">
         <h2>🥗 Reparto de Macronutrientes Diario</h2>
@@ -127,9 +127,58 @@
         </div>
       </section>
 
+      <!-- CREADOR DE RECETAS PROPIAS CON IA / ANÁLISIS -->
+      <section class="card custom-recipe-card">
+        <h2>👨‍🍳 Crear Receta Propia & Analizador</h2>
+        <p class="modal-sub" style="margin-bottom: 10px;">Escribe una receta improvisada (de TikTok, casera, etc.) para que la app te analice cuándo comerla.</p>
+        
+        <form id="create-recipe-form">
+          <div class="form-group">
+            <label for="recipe-title">Nombre de la receta:</label>
+            <input type="text" id="recipe-title" required placeholder="Ej: Ensalada César Casera Fitness">
+          </div>
+
+          <div class="form-group">
+            <label for="recipe-ingredients">Ingredientes utilizados:</label>
+            <input type="text" id="recipe-ingredients" required placeholder="Ej: Lechuga, tomate, pollo a la plancha, parmesano...">
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="recipe-kcal">Calorías aprox (kcal):</label>
+              <input type="number" id="recipe-kcal" required placeholder="Ej: 450">
+            </div>
+            <div class="form-group">
+              <label for="recipe-protein">Proteína aprox (g):</label>
+              <input type="number" id="recipe-protein" placeholder="Ej: 35">
+            </div>
+          </div>
+
+          <button type="submit" class="btn-primary" style="margin-top: 4px;">🧠 Analizar y Guardar en mi Cuenta</button>
+        </form>
+
+        <!-- Caja de Análisis de la Receta -->
+        <div id="recipe-analysis-box" class="recipe-analysis-box" style="display: none;">
+          <h3 id="analysis-title" style="color: var(--accent-blue); font-size: 0.95rem;">Análisis de la receta</h3>
+          <p id="analysis-text" style="font-size: 0.84rem; margin: 6px 0 10px;"></p>
+          <div class="modal-actions">
+            <button type="button" id="btn-add-recipe-to-diet" class="btn-primary" style="padding: 10px;">➕ Añadir a mi Menú</button>
+            <button type="button" id="btn-close-analysis" class="btn-secondary" style="padding: 10px;">Descartar</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- RECETARIO GUARDADO -->
+      <section class="card saved-recipes-card">
+        <h2>📖 Mis Recetas Guardadas</h2>
+        <div id="user-recipes-list" class="meals-accordion">
+          <p class="empty-msg" style="color: var(--text-muted); font-size: 0.85rem;">No tienes recetas guardadas todavía.</p>
+        </div>
+      </section>
+
       <!-- Buscador de Alimentos Mercadona / Fitness -->
       <section class="card search-card">
-        <h2>🔍 Añadir o Buscar Alimentos</h2>
+        <h2>🔍 Catálogo de Alimentos (Mercadona / Fitness)</h2>
         <div class="search-box-group">
           <input type="text" id="food-search-input" class="search-input" placeholder="Buscar: Queso batido, Avena, Pavo Hacendado, Arroz...">
           <div id="food-search-results" class="search-results-box"></div>
@@ -376,7 +425,7 @@
     </main>
   </div>
 
-  <!-- MODAL DE AUTENTICACIÓN (LOGIN / REGISTRO) -->
+  <!-- MODAL DE AUTENTICACIÓN -->
   <div id="auth-modal" class="modal-overlay">
     <div class="modal-card">
       <h2 id="auth-modal-title">🔐 Iniciar Sesión / Registro</h2>
@@ -459,6 +508,6 @@
     </div>
   </div>
 
-  <script src="app.js?v=100"></script>
+  <script src="app.js?v=110"></script>
 </body>
 </html>
