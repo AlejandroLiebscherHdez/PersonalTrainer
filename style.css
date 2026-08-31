@@ -428,3 +428,59 @@ input[type="range"] {
 .history-item.craving {
   border-left: 3px solid var(--accent-red);
 }
+
+/* Acordeón y Días de Rutina */
+.routine-accordion {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.routine-day-card {
+  background: #0b0f19;
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  padding: 14px;
+}
+
+.routine-day-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.routine-day-name {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--accent-blue);
+}
+
+.routine-day-focus {
+  font-size: 0.75rem;
+  background: #1f2a44;
+  color: var(--text-muted);
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+.exercise-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.82rem;
+}
+
+.exercise-item {
+  display: flex;
+  justify-content: space-between;
+  color: var(--text-main);
+  padding-bottom: 4px;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.06);
+}
+
+.exercise-sets {
+  color: var(--accent-green);
+  font-weight: 600;
+}

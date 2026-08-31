@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>PersonalTrainer AI | Fitness & Health Hub</title>
-  <link rel="stylesheet" href="style.css?v=40">
+  <title>PersonalTrainer AI | Fitness & Health</title>
+  <link rel="stylesheet" href="style.css?v=60">
   <link rel="manifest" href="manifest.json">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -17,10 +17,10 @@
         <h1 id="user-greeting">Personal<span>Trainer</span></h1>
         <button id="btn-open-profile" class="btn-icon" title="Ajustar Perfil">⚙️</button>
       </div>
-      <p class="subtitle" id="user-goal-subtitle">Plan de Alto Rendimiento y Cambio Físico</p>
+      <p class="subtitle" id="user-goal-subtitle">Plan de Alto Rendimiento y Salud Integral</p>
     </header>
 
-    <!-- Barra de Navegación Principal -->
+    <!-- Barra de Navegación -->
     <nav class="nav-tabs">
       <button class="tab-btn active" data-tab="tab-dashboard">🏋️‍♂️ Mi Plan</button>
       <button class="tab-btn" data-tab="tab-fitness">⚽ Entrenos</button>
@@ -29,17 +29,52 @@
       <button class="tab-btn" data-tab="tab-log">➕ Registrar</button>
     </nav>
 
-    <!-- PESTAÑA 1: MI PLAN & COACH INTELIGENTE -->
+    <!-- PESTAÑA 1: MI PLAN & COACH -->
     <main id="tab-dashboard" class="tab-content active">
       <section class="card coach-card">
         <h2>🧠 Coach Nutricional & Metabólico</h2>
         <div id="coach-advice-container">
-          <p class="insight-text">Cargando análisis de actividad...</p>
+          <p class="insight-text">Calculando gasto energético...</p>
         </div>
         <div class="calories-target-box">
           <span class="cal-title">Presupuesto Calórico Recomendado Hoy</span>
           <span id="daily-target-calories" class="cal-number">-- kcal</span>
           <small id="cal-breakdown-text">Mantenimiento + Gasto Apple Watch - Déficit Objetivo</small>
+        </div>
+      </section>
+
+      <!-- Checklist Extendido de Acciones Diarias -->
+      <section class="card checklist-card">
+        <h2>✅ Checklist Diario de Alto Rendimiento</h2>
+        <div class="checklist-group">
+          <label class="check-item">
+            <input type="checkbox" id="chk-water">
+            <span>💧 Hidratación (2.5L - 3L agua fresca)</span>
+          </label>
+          <label class="check-item">
+            <input type="checkbox" id="chk-creatine">
+            <span>⚡ Suplementación / Creatina (dosis diaria)</span>
+          </label>
+          <label class="check-item">
+            <input type="checkbox" id="chk-protein">
+            <span>🥩 Meta Proteica (~1.8g - 2g / kg de peso)</span>
+          </label>
+          <label class="check-item">
+            <input type="checkbox" id="chk-steps">
+            <span>🚶 Superar objetivo de 8.000 pasos</span>
+          </label>
+          <label class="check-item">
+            <input type="checkbox" id="chk-workout">
+            <span>🔥 Sesión de entrenamiento completada</span>
+          </label>
+          <label class="check-item">
+            <input type="checkbox" id="chk-clean">
+            <span>🚭 Día 100% libre de vapeo y nicotina</span>
+          </label>
+          <label class="check-item">
+            <input type="checkbox" id="chk-sleep">
+            <span>😴 Descanso regenerativo (7h - 8h de sueño)</span>
+          </label>
         </div>
       </section>
 
@@ -55,7 +90,7 @@
             <span id="metric-today-burn" class="metric-value">0 kcal</span>
           </div>
           <div class="metric-box">
-            <span class="metric-title">Pulso en Reposo</span>
+            <span class="metric-title">Pulso Reposo</span>
             <span id="metric-resting-bpm" class="metric-value">-- bpm</span>
           </div>
           <div class="metric-box">
@@ -66,32 +101,62 @@
       </section>
     </main>
 
-    <!-- PESTAÑA 2: ENTRENOS Y RENDIMIENTO FÍSICO -->
+    <!-- PESTAÑA 2: ENTRENOS Y PLAN PERSONALIZADO -->
     <main id="tab-fitness" class="tab-content">
+      <!-- Selector de Plan de Entrenamiento Personalizado -->
+      <section class="card routine-config-card">
+        <h2>📋 Plan de Entrenamiento Personalizado</h2>
+        <p class="modal-sub" style="margin-bottom: 12px;">Genera tu rutina semanal según tu objetivo y grupo muscular a priorizar.</p>
+        
+        <div class="form-group">
+          <label for="workout-focus">Zona o Enfoque Principal:</label>
+          <select id="workout-focus">
+            <option value="fullbody">⚽ Fútbol & Rendimiento Total (Híbrido + Full Body)</option>
+            <option value="upper">💪 Tren Superior (Pecho, Espalda, Hombro, Brazos)</option>
+            <option value="lower">🦵 Tren Inferior & Core (Piernas, Glúteos y Abdomen)</option>
+            <option value="torso_pierna">🔥 Torso / Pierna Clásico (Fuerza & Hipertrofia)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="workout-days-week">Días de entrenamiento por semana:</label>
+          <select id="workout-days-week">
+            <option value="3">3 días / semana</option>
+            <option value="4" selected>4 días / semana</option>
+            <option value="5">5 días / semana</option>
+          </select>
+        </div>
+
+        <button id="btn-generate-routine" class="btn-primary" style="margin-top: 4px;">Actualizar Rutina Semanal</button>
+      </section>
+
+      <!-- Visualizador de la Rutina por Días -->
+      <section class="card routine-display-card">
+        <h2 id="routine-title">📅 Tu Plan Semanal</h2>
+        <div id="weekly-routine-container" class="routine-accordion">
+          <!-- Rutina renderizada dinámicamente -->
+        </div>
+      </section>
+
       <section class="card chart-card">
         <h2>Pasos Semanales (Apple Watch)</h2>
         <canvas id="stepsChart"></canvas>
       </section>
 
       <section class="card workouts-card">
-        <h2>⚽ Sesiones de Deporte & Entrenos</h2>
+        <h2>⚽ Sesiones Registradas por el Reloj</h2>
         <div id="workouts-list" class="readings-container">
           <p class="empty-msg">No hay sesiones de entreno registradas todavía.</p>
         </div>
-      </section>
-
-      <section class="card tip-card">
-        <h2>💡 Eficiencia Cardiorrespiratoria</h2>
-        <p class="tip-text">Al jugar fútbol o realizar deporte de alta intensidad, tus músculos aumentan la sensibilidad a la insulina y aceleran la quema de grasa durante todo el día posterior.</p>
       </section>
     </main>
 
     <!-- PESTAÑA 3: SALUD & PULSO -->
     <main id="tab-health" class="tab-content">
       <section class="card diagnosis-card">
-        <h2>🩺 Monitor Cardiovascular</h2>
+        <h2>🩺 Monitor Cardiovascular & Autonómico</h2>
         <div id="bpm-diagnostic-container" class="diagnostic-box">
-          <p>Analizando registros de reposo del reloj...</p>
+          <p>Analizando registros del Apple Watch...</p>
         </div>
       </section>
 
@@ -100,17 +165,18 @@
         <canvas id="bpmHealthChart"></canvas>
       </section>
 
-      <section class="card reference-card">
-        <h2>Rangos de Referencia</h2>
-        <ul class="ref-list">
-          <li>🟢 <strong>60 - 75 bpm:</strong> Zona óptima / corazón eficiente.</li>
-          <li>🟡 <strong>76 - 90 bpm:</strong> Estimulado por esfuerzo, estrés o fatiga.</li>
-          <li>🔴 <strong>> 90 bpm:</strong> Frecuencia basal elevada en reposo.</li>
-        </ul>
+      <section class="card interactive-card">
+        <h2>🧘 Descompresión del Sistema Nervioso</h2>
+        <p class="tip-text" style="margin-bottom: 10px;">Si sientes fatiga o ansiedad, usa el temporizador 4-7-8 para bajar el ritmo basal.</p>
+        <button id="btn-start-breath" class="btn-primary">Iniciar Respiración Guiada (1 min)</button>
+        <div id="breath-guide-box" style="display: none; text-align: center; margin-top: 12px;">
+          <h3 id="breath-status" style="font-size: 1.3rem; color: var(--accent-blue);">Inhala...</h3>
+          <span id="breath-timer" style="font-size: 2rem; font-weight: 800;">4</span>
+        </div>
       </section>
     </main>
 
-    <!-- PESTAÑA 4: HÁBITOS & VAPEO -->
+    <!-- PESTAÑA 4: HÁBITOS & AHORRO -->
     <main id="tab-habits" class="tab-content">
       <section class="card timer-card">
         <h2>Tiempo Libre de Vapeo</h2>
@@ -118,6 +184,23 @@
         <div class="timer-actions">
           <button id="btn-craving" class="btn-craving-sm">⚡ ¡Tengo Urgencia!</button>
           <button id="btn-reset-timer" class="btn-secondary-sm">Registrar Recaída</button>
+        </div>
+      </section>
+
+      <section class="card habit-config-card">
+        <h2>💰 Configuración de Ahorro</h2>
+        <div class="form-group">
+          <label for="habit-product-type">¿Qué solías consumir?:</label>
+          <select id="habit-product-type">
+            <option value="bombo">Líquido / Sales Bombo + Resistencia (~1.70 €/día)</option>
+            <option value="disposable">Vapes Desechables 8€ (~4.00 €/día)</option>
+            <option value="tobacco">Tabaco Tradicional (~5.50 €/día)</option>
+            <option value="custom">Gasto personalizado...</option>
+          </select>
+        </div>
+        <div id="custom-cost-group" class="form-group" style="display: none;">
+          <label for="custom-daily-cost">Gasto estimado al día (€):</label>
+          <input type="number" step="0.1" id="custom-daily-cost" placeholder="Ej: 2.50">
         </div>
       </section>
 
@@ -183,7 +266,7 @@
 
           <div class="form-group">
             <label for="notes">Notas adicionales:</label>
-            <input type="text" id="notes" placeholder="Ej: Buenas sensaciones en el entreno...">
+            <input type="text" id="notes" placeholder="Ej: Sensaciones, comidas o entreno...">
           </div>
 
           <button type="submit" class="btn-primary">Guardar Datos</button>
@@ -192,7 +275,7 @@
     </main>
   </div>
 
-  <!-- MODAL DE AJUSTES DE PERFIL Y PLAN -->
+  <!-- MODAL DE PERFIL -->
   <div id="profile-modal" class="modal-overlay">
     <div class="modal-card">
       <h2>⚙️ Configura tu Perfil Físico</h2>
@@ -238,6 +321,6 @@
     </div>
   </div>
 
-  <script src="app.js?v=40"></script>
+  <script src="app.js?v=60"></script>
 </body>
 </html>
