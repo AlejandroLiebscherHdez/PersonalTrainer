@@ -4,13 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>VapeTracker Pro</title>
-  <link rel="stylesheet" href="style.css?v=6">
+  <link rel="stylesheet" href="style.css?v=10">
   <link rel="manifest" href="manifest.json">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <!-- Chart.js y Supabase JS UMD -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </head>
 <body>
   <div class="app-container">
@@ -64,13 +61,15 @@
         </div>
       </section>
 
-      <section class="card chart-card">
-        <h2>Evolución Pulso en Reposo</h2>
-        <canvas id="bpmChart"></canvas>
+      <section class="card summary-card">
+        <h2>Últimas Lecturas de Reposo</h2>
+        <div id="health-readings-list" class="readings-container">
+          <p class="empty-msg">Sin datos recientes.</p>
+        </div>
       </section>
 
       <section class="card reference-card">
-        <h2>Rangos de Referencia</h2>
+        <h2>Rangos de Referencia Médica</h2>
         <ul class="ref-list">
           <li>🟢 <strong>60 - 75 bpm:</strong> Rango óptimo en reposo.</li>
           <li>🟡 <strong>76 - 90 bpm:</strong> Rango moderado / estimulado por nicotina o estrés.</li>
@@ -142,6 +141,6 @@
     </main>
   </div>
 
-  <script src="app.js?v=6"></script>
+  <script src="app.js?v=10"></script>
 </body>
 </html>

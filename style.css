@@ -7,7 +7,6 @@
   --accent-blue: #38bdf8;
   --accent-green: #238636;
   --accent-red: #da3633;
-  --accent-yellow: #d29922;
 }
 
 * {
@@ -44,6 +43,7 @@ h1 {
   font-size: 1.7rem;
   font-weight: 800;
   letter-spacing: -0.5px;
+  color: var(--text-main);
 }
 
 h1 span {
@@ -91,7 +91,7 @@ h1 span {
 }
 
 .tab-content.active {
-  display: flex;
+  display: flex !important;
 }
 
 /* Tarjetas */
@@ -135,7 +135,6 @@ h1 span {
   font-size: 1rem;
   font-weight: 700;
   cursor: pointer;
-  transition: opacity 0.2s;
 }
 
 .btn-primary:active {
@@ -225,6 +224,23 @@ h1 span {
 .ref-list li {
   padding: 8px 0;
   border-bottom: 1px solid #21262d;
+}
+
+.readings-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.reading-pill {
+  background: #0d1117;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--card-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
 }
 
 /* Formularios */
