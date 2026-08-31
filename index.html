@@ -531,5 +531,39 @@
   </div>
 
   <script src="app.js?v=130"></script>
+
+  <!-- MODAL EMERGENTE DE BIENVENIDA / CHECK-IN RÁPIDO -->
+  <div id="checkin-modal" class="modal-overlay">
+    <div class="modal-card checkin-card">
+      <div class="checkin-header">
+        <span class="checkin-badge">⚡ Check-in Diario</span>
+        <h2 id="checkin-greeting">¡Hola, Atleta! 👋</h2>
+        <p class="modal-sub">¿Quieres registrar tus datos de hoy para actualizar tu plan calórico y salud?</p>
+      </div>
+
+      <form id="checkin-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="checkin-weight">⚖️ Peso (kg):</label>
+            <input type="number" step="0.1" id="checkin-weight" placeholder="Ej: 79.5">
+          </div>
+          <div class="form-group">
+            <label for="checkin-bpm">❤️ Pulso (BPM):</label>
+            <input type="number" id="checkin-bpm" placeholder="Ej: 72">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="checkin-mood">⚡ Energía / Ánimo (1 al 10): <span id="checkin-mood-val">7</span></label>
+          <input type="range" id="checkin-mood" min="1" max="10" value="7">
+        </div>
+
+        <div class="checkin-actions">
+          <button type="submit" class="btn-primary">💾 Guardar y Entrar</button>
+          <button type="button" id="btn-skip-checkin" class="btn-secondary">Entrar directamente ➔</button>
+        </div>
+      </form>
+    </div>
+  </div>
 </body>
 </html>

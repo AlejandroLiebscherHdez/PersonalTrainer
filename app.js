@@ -136,6 +136,7 @@ const ROUTINE_TEMPLATES = {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
+    setupCheckinModal();
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -1624,4 +1625,95 @@ function initApp() {
 
   loadData();
   setInterval(loadData, 10000);
+}
+
+// =======================================================
+// NUEVA FUNCIÓN: MODAL EMERGENTE DE CHECK-IN / BIENVENIDA
+// =======================================================
+function setupCheckinModal() {
+  const modal = document.getElementById('checkin-modal');
+  const greetingEl = document.getElementById('checkin-greeting');
+  const skipBtn = document.getElementById('btn-skip-checkin');
+  const form = document.getElementById('checkin-form');
+  const moodInput = document.getElementById('checkin-mood');
+  const moodVal = document.getElementById('checkin-mood-val');
+
+  if (!modal) return;
+
+  // 1. Poner el nombre en el saludo
+  if (greetingEl) {
+    const storedProfile = JSON.parse(localStorage.getItem('userProfile')) || {};
+    greetingEl.innerText = `¡Hola, ${storedProfile.name || 'Atleta'}! 👋`;
+  }
+
+  // 2. Slider de energía/ánimo en directo
+  if (moodInput && moodVal) {
+    moodInput.addEventListener('input', (e) => {
+      moodVal.innerText = e.target.value;
+    });
+  }
+
+  // 3. Abrir la ventana emergente al iniciar
+  modal.classList.add('open');
+
+  // 4. Botón para saltar y entrar directo
+  if (skipBtn) {
+    skipBtn.addEventListener('click', () => {
+      modal.classList.remove('open');
+    });
+  }
+
+  // 5. Guardar datos si el usuario introduce peso o pulso
+  if (form) {
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const weightVal = document.getElementById('checkin-weight').value;
+      const bpmVal = document.getElementById('checkin-bpm').value;
+      const moodScore = moodInput ? Number(moodInput.value) : 7;
+
+      const promises = [];
+
+      if (weightVal) {
+        let profile = JSON.parse(localStorage.getItem('userProfile')) || {};
+        profile.weight = Number(weightVal);
+        localStorage.setItem('userProfile', JSON.stringify(profile));
+        
+        promises.push(
+          fetch(`${SUPABASE_URL}/rest/v1/body_metrics`, {
+            method: "POST",
+            headers,
+            body: JSON.stringify({ weight_kg: Number(weightVal), note: 'Check-in apertura' })
+          })
+        );
+      }
+
+      if (bpmVal || weightVal) {
+        promises.push(
+          fetch(`${SUPABASE_URL}/rest/v1/vape_logs`, {
+            method: "POST",
+            headers,
+            body: JSON.stringify({
+              type: 'estado',
+              bpm: bpmVal ? Number(bpmVal) : null,
+              mood: moodScore,
+              note: weightVal ? `Check-in apertura: Peso ${weightVal}kg` : 'Check-in apertura'
+            })
+          })
+        );
+      }
+
+      if (promises.length > 0) {
+        try {
+          await Promise.all(promises);
+        } catch (err) {
+          console.error("Error al guardar check-in:", err);
+        }
+      }
+
+      modal.classList.remove('open');
+      if (typeof loadData === 'function') {
+        loadData();
+      }
+    });
+  }
 }
