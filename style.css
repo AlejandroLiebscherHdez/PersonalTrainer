@@ -72,6 +72,11 @@ h1 span {
   color: var(--accent-blue);
 }
 
+.header-actions {
+  display: flex;
+  gap: 6px;
+}
+
 .btn-icon {
   background: var(--card-bg);
   border: 1px solid var(--card-border);
@@ -79,6 +84,7 @@ h1 span {
   padding: 8px 12px;
   border-radius: 12px;
   cursor: pointer;
+  color: var(--text-main);
 }
 
 .subtitle {
@@ -87,7 +93,7 @@ h1 span {
   margin-top: 2px;
 }
 
-/* Tabs sin scrollbar blanca */
+/* Tabs */
 .nav-tabs {
   display: flex;
   gap: 6px;
@@ -271,33 +277,148 @@ h1 span {
   color: var(--accent-blue);
 }
 
-/* Diagnóstico & Listas */
-.diagnostic-box {
-  background: #0b0f19;
-  padding: 14px;
-  border-radius: 12px;
-  font-size: 0.88rem;
-  line-height: 1.5;
-}
-
-.readings-container {
-  display: flex;
-  flex-direction: column;
+/* Nutrición y Macros */
+.macros-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
   gap: 8px;
 }
 
-.reading-pill {
+.macro-box {
   background: #0b0f19;
-  padding: 12px 14px;
-  border-radius: 12px;
   border: 1px solid var(--card-border);
+  border-radius: 12px;
+  padding: 12px 6px;
+  text-align: center;
+}
+
+.macro-label {
+  display: block;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+  text-transform: uppercase;
+}
+
+.macro-val {
+  display: block;
+  font-size: 1.25rem;
+  font-weight: 800;
+}
+
+.macro-box small {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+.section-header-flex {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 0.85rem;
+  margin-bottom: 12px;
+  gap: 8px;
 }
 
-/* Rutina Interactiva & Ejercicios */
+.select-sm {
+  background: #0b0f19;
+  border: 1px solid var(--card-border);
+  color: var(--text-main);
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 0.78rem;
+}
+
+.meals-accordion {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.meal-card {
+  background: #0b0f19;
+  border: 1px solid var(--card-border);
+  border-radius: 14px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: all 0.2s;
+}
+
+.meal-card.completed {
+  border-color: var(--accent-green);
+  opacity: 0.85;
+}
+
+.meal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.meal-title-text {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--accent-blue);
+}
+
+.meal-kcal-badge {
+  color: var(--accent-green);
+  font-size: 0.82rem;
+  font-weight: 700;
+  background: #131b2e;
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--card-border);
+}
+
+.meal-food-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.84rem;
+}
+
+.meal-food-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 4px;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.08);
+}
+
+.meal-actions-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.btn-meal-action {
+  flex: 1;
+  background: #131b2e;
+  border: 1px solid var(--card-border);
+  color: var(--text-muted);
+  padding: 7px 10px;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-meal-action:hover {
+  color: var(--text-main);
+  border-color: var(--accent-blue);
+}
+
+.btn-meal-action.active {
+  background: rgba(16, 185, 129, 0.2);
+  border-color: var(--accent-green);
+  color: var(--accent-green);
+}
+
+/* Rutinas */
 .routine-accordion {
   display: flex;
   flex-direction: column;
@@ -358,6 +479,16 @@ h1 span {
   cursor: pointer;
 }
 
+.btn-delete-ex {
+  background: transparent;
+  border: none;
+  color: #ef4444;
+  font-size: 0.95rem;
+  cursor: pointer;
+  padding: 0 4px;
+  margin-left: 6px;
+}
+
 .btn-add-ex {
   background: transparent;
   border: 1px dashed var(--card-border);
@@ -370,7 +501,7 @@ h1 span {
   cursor: pointer;
 }
 
-/* Buscador de Deportes y Ejercicios */
+/* Buscador */
 .search-box-group {
   position: relative;
   margin-bottom: 12px;
@@ -415,7 +546,7 @@ h1 span {
   background: #1f2a44;
 }
 
-/* Formularios */
+/* Formularios y corrección de fondo blanco en Autofill */
 .form-group {
   margin-bottom: 12px;
   display: flex;
@@ -437,14 +568,28 @@ label {
 
 input[type="number"],
 input[type="text"],
+input[type="email"],
+input[type="password"],
 select {
   width: 100%;
-  background: #0b0f19;
-  border: 1px solid var(--card-border);
-  color: var(--text-main);
+  background-color: #0b0f19 !important;
+  border: 1px solid var(--card-border) !important;
+  color: var(--text-main) !important;
   padding: 12px;
   border-radius: 10px;
   font-size: 0.95rem;
+  outline: none;
+}
+
+/* Evitar el rectángulo blanco de autocompletado en navegadores */
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus, 
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px #0b0f19 inset !important;
+  -webkit-text-fill-color: #f8fafc !important;
+  border: 1px solid var(--card-border) !important;
+  transition: background-color 5000s ease-in-out 0s;
 }
 
 input[type="range"] {
@@ -581,103 +726,4 @@ input[type="range"] {
 
 .progress-bar-fill.fill-green {
   background: var(--accent-green);
-}
-
-/* Nutrición y Macros */
-.macros-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 8px;
-}
-
-.macro-box {
-  background: #0b0f19;
-  border: 1px solid var(--card-border);
-  border-radius: 12px;
-  padding: 10px 6px;
-  text-align: center;
-}
-
-.macro-label {
-  display: block;
-  font-size: 0.72rem;
-  color: var(--text-muted);
-  margin-bottom: 4px;
-  text-transform: uppercase;
-}
-
-.macro-val {
-  display: block;
-  font-size: 1.15rem;
-  font-weight: 800;
-}
-
-.macro-box small {
-  font-size: 0.7rem;
-  color: var(--text-muted);
-}
-
-.section-header-flex {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
-}
-
-.select-sm {
-  background: #0b0f19;
-  border: 1px solid var(--card-border);
-  color: var(--text-main);
-  padding: 6px 10px;
-  border-radius: 8px;
-  font-size: 0.78rem;
-}
-
-.meals-accordion {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.meal-card {
-  background: #0b0f19;
-  border: 1px solid var(--card-border);
-  border-radius: 12px;
-  padding: 12px 14px;
-}
-
-.meal-title {
-  font-size: 0.88rem;
-  font-weight: 700;
-  color: var(--accent-blue);
-  margin-bottom: 4px;
-  display: flex;
-  justify-content: space-between;
-}
-
-.meal-desc {
-  font-size: 0.8rem;
-  color: var(--text-muted);
-  line-height: 1.4;
-}
-
-/* Botón de eliminación de ejercicio */
-.btn-delete-ex {
-  background: transparent;
-  border: none;
-  color: #ef4444;
-  font-size: 0.95rem;
-  cursor: pointer;
-  padding: 0 4px;
-  margin-left: 6px;
-  transition: transform 0.1s;
-}
-
-.btn-delete-ex:active {
-  transform: scale(0.85);
-}
-
-.header-actions {
-  display: flex;
-  gap: 6px;
 }
