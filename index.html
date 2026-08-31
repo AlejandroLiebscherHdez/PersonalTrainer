@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#121212">
+  <title>VapeTracker</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-container">
+    <header>
+      <h1>VapeTracker</h1>
+      <p class="subtitle">Control y Bienestar</p>
+    </header>
+
+    <!-- Contador de tiempo limpio -->
+    <section class="card counter-card">
+      <h2>Tiempo sin vapear</h2>
+      <div id="clean-timer" class="timer-display">0d 00h 00m 00s</div>
+      <button id="btn-reset-timer" class="btn-secondary">Reiniciar contador (Recaída)</button>
+    </section>
+
+    <!-- Registro rápido de Urgencia/Ganas -->
+    <section class="card action-card">
+      <button id="btn-craving" class="btn-main">¡Tengo ganas de vapear!</button>
+      <p class="hint">Respira hondo 4 segundos antes de pulsar</p>
+    </section>
+
+    <!-- Registro diario de estado de ánimo y pulsaciones -->
+    <section class="card form-card">
+      <h3>Registro rápido</h3>
+      <form id="tracker-form">
+        <label for="mood">Estado de ánimo / Energía (1 al 10):</label>
+        <div class="range-group">
+          <input type="range" id="mood" min="1" max="10" value="5">
+          <span id="mood-value">5</span>
+        </div>
+
+        <label for="heart-rate">Pulsaciones en reposo (opcional):</label>
+        <input type="number" id="heart-rate" placeholder="Ej: 75 bpm">
+
+        <label for="notes">Notas o contexto:</label>
+        <input type="text" id="notes" placeholder="Ej: Estudiando, después de comer...">
+
+        <button type="submit" class="btn-save">Guardar registro</button>
+      </form>
+    </section>
+
+    <!-- Historial de registros -->
+    <section class="card history-card">
+      <h3>Historial reciente</h3>
+      <ul id="history-list"></ul>
+    </section>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
