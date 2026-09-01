@@ -2277,7 +2277,7 @@ function renderWeightChart() {
 }
 
 // ==========================================
-// ASISTENTE DE IA REAL CON GEMINI API (DEFINITIVO)
+// ASISTENTE DE IA REAL CON GEMINI API (AUTO-FALLBACK)
 // ==========================================
 function setupTrainerChat() {
   const toggleBtn = document.getElementById('btn-toggle-trainer-chat');
@@ -2336,9 +2336,6 @@ function setupTrainerChat() {
         }
       }
 
-      // Endpoint actualizado con alias 'gemini-1.5-flash-latest'
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${encodeURIComponent(apiKey)}`;
-
       const currentWeight = userProfile ? userProfile.weight : 80;
       const targetCals = document.getElementById('daily-target-calories')?.innerText || "2000 kcal";
 
@@ -2350,30 +2347,42 @@ Responde con cercanía, rigor y motivación en español. Si el usuario te pide e
 - [ACTION: CHECKLIST]
 - [ACTION: INGREDIENT]`;
 
-      const apiResponse = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [
-            {
-              role: "user",
-              parts: [{ text: systemPrompt + "\n\nPetición del usuario: " + text }]
-            }
-          ]
-        })
-      });
+      // Lista de modelos a probar por orden de preferencia
+      const candidateModels = ['gemini-2.0-flash', 'gemini-2.5-flash', 'gemini-1.5-flash'];
+      let data = null;
+      let lastError = null;
 
-      const data = await apiResponse.json();
+      for (const model of candidateModels) {
+        try {
+          const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
+          const res = await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contents: [
+                { role: "user", parts: [{ text: systemPrompt + "\n\nPetición: " + text }] }
+              ]
+            })
+          });
 
-      if (!apiResponse.ok) {
-        console.error("Detalle del error:", data);
-        throw new Error(data.error?.message || "Error HTTP " + apiResponse.status);
+          const json = await res.json();
+          if (res.ok && json.candidates?.[0]?.content?.parts?.[0]?.text) {
+            data = json;
+            break; // Conexión exitosa, salimos del bucle
+          } else {
+            lastError = json.error?.message || `Error en modelo ${model}`;
+          }
+        } catch (e) {
+          lastError = e.message;
+        }
       }
 
-      let botReply = "No he podido procesar la respuesta.";
-      if (data.candidates && data.candidates[0]?.content?.parts?.[0]?.text) {
-        botReply = data.candidates[0].content.parts[0].text;
+      if (!data) {
+        throw new Error(lastError || "No se pudo conectar con ningún modelo de Gemini.");
       }
+
+      const botReplyRaw = data.candidates[0].content.parts[0].text;
+      let botReply = botReplyRaw;
 
       document.getElementById(loadingId)?.remove();
 
@@ -2423,7 +2432,7 @@ Responde con cercanía, rigor y motivación en español. Si el usuario te pide e
       messagesBox.scrollTop = messagesBox.scrollHeight;
 
     } catch (err) {
-      console.error("Error completo en chat:", err);
+      console.error("Error en chat:", err);
       document.getElementById(loadingId)?.remove();
       messagesBox.innerHTML += `<div style="background: #ef4444; color: white; padding: 8px 12px; border-radius: 10px; align-self: flex-start;">Error de IA: ${err.message}</div>`;
     }
