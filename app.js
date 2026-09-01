@@ -2277,7 +2277,7 @@ function renderWeightChart() {
 }
 
 // ==========================================
-// ASISTENTE DE IA CON AUTODETECCIÓN DE MODELO
+// ASISTENTE DE IA REAL (GEMINI 3.6 FLASH)
 // ==========================================
 function setupTrainerChat() {
   const toggleBtn = document.getElementById('btn-toggle-trainer-chat');
@@ -2314,6 +2314,17 @@ function setupTrainerChat() {
     const text = inputEl.value.trim();
     if (!text) return;
 
+    // Comando rápido para cambiar la API Key en cualquier momento
+    if (text.toLowerCase() === '/key' || text.toLowerCase() === 'cambiar clave' || text.toLowerCase() === '/reset') {
+      inputEl.value = '';
+      const newKey = prompt("Introduce tu nueva API Key de Google AI Studio:");
+      if (newKey) {
+        localStorage.setItem('gemini_api_key', newKey.trim());
+        messagesBox.innerHTML += `<div style="background: #10b981; color: white; padding: 8px 12px; border-radius: 10px; align-self: flex-start;">✅ API Key actualizada correctamente.</div>`;
+      }
+      return;
+    }
+
     messagesBox.innerHTML += `<div style="background: #2563eb; color: white; padding: 8px 12px; border-radius: 10px; align-self: flex-end; max-width: 80%;"> ${text}</div>`;
     inputEl.value = '';
     messagesBox.scrollTop = messagesBox.scrollHeight;
@@ -2325,43 +2336,26 @@ function setupTrainerChat() {
     try {
       let apiKey = localStorage.getItem('gemini_api_key');
       if (!apiKey) {
-        apiKey = prompt("Introduce tu clave API de Google AI Studio:");
+        apiKey = prompt("Introduce tu API Key de Google AI Studio:");
         if (apiKey) {
           apiKey = apiKey.trim();
           localStorage.setItem('gemini_api_key', apiKey);
         } else {
           document.getElementById(loadingId)?.remove();
-          messagesBox.innerHTML += `<div style="background: #ef4444; color: white; padding: 8px 12px; border-radius: 10px; align-self: flex-start;">Falta la clave de Gemini para continuar.</div>`;
+          messagesBox.innerHTML += `<div style="background: #ef4444; color: white; padding: 8px 12px; border-radius: 10px; align-self: flex-start;">Falta la clave de Gemini para continuar. Escribe <b>/key</b> para añadirla.</div>`;
           return;
         }
       }
 
-      // 1. Detectar automáticamente qué modelos admite la clave
-      let activeModel = localStorage.getItem('gemini_active_model');
-      if (!activeModel) {
-        const listRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(apiKey)}`);
-        const listData = await listRes.json();
-        
-        if (listData.models && listData.models.length > 0) {
-          // Buscar primero cualquier variante de 'flash', si no, el primero compatible con generateContent
-          const usable = listData.models.find(m => m.name.includes('flash') && m.supportedGenerationMethods?.includes('generateContent')) 
-                      || listData.models.find(m => m.supportedGenerationMethods?.includes('generateContent'));
-          if (usable) {
-            activeModel = usable.name; // Ej: "models/gemini-2.0-flash" o "models/gemini-1.5-flash-001"
-            localStorage.setItem('gemini_active_model', activeModel);
-          }
-        }
-      }
-
-      const modelPath = activeModel || 'models/gemini-2.0-flash';
-      const url = `https://generativelanguage.googleapis.com/v1beta/${modelPath}:generateContent?key=${encodeURIComponent(apiKey)}`;
+      // Endpoint oficial con el modelo gemini-3.6-flash
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${encodeURIComponent(apiKey)}`;
 
       const currentWeight = userProfile ? userProfile.weight : 80;
       const targetCals = document.getElementById('daily-target-calories')?.innerText || "2000 kcal";
 
       const systemPrompt = `Eres Alejandro Trainer Bot, un asistente experto en fitness, nutrición, suplementación y rendimiento deportivo. 
 El usuario actual pesa ${currentWeight} kg y su objetivo calórico diario es ${targetCals}. 
-Responde con cercanía, rigor y motivación en español. Si el usuario te pide explícitamente realizar una acción de la app, añade al final de tu mensaje una etiqueta oculta de comando:
+Responde con cercanía, rigor y motivación en español. Si el usuario pide explícitamente realizar una acción de la app, añade al final de tu respuesta una etiqueta oculta de comando:
 - [ACTION: SLEEP, X] (donde X son las horas)
 - [ACTION: WATER]
 - [ACTION: CHECKLIST]
@@ -2372,10 +2366,7 @@ Responde con cercanía, rigor y motivación en español. Si el usuario te pide e
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           contents: [
-            {
-              role: "user",
-              parts: [{ text: systemPrompt + "\n\nPetición: " + text }]
-            }
+            { role: "user", parts: [{ text: systemPrompt + "\n\nPetición: " + text }] }
           ]
         })
       });
@@ -2383,9 +2374,7 @@ Responde con cercanía, rigor y motivación en español. Si el usuario te pide e
       const data = await apiResponse.json();
 
       if (!apiResponse.ok) {
-        console.error("Error devuelto por Gemini:", data);
-        // Si el modelo falló, limpiar caché de modelo para forzar nueva detección
-        localStorage.removeItem('gemini_active_model');
+        console.error("Error de Gemini:", data);
         throw new Error(data.error?.message || "Error HTTP " + apiResponse.status);
       }
 
@@ -2396,7 +2385,7 @@ Responde con cercanía, rigor y motivación en español. Si el usuario te pide e
 
       document.getElementById(loadingId)?.remove();
 
-      // Intérprete de acciones
+      // Intérprete de acciones del Agente
       const todayKey = 'dailyChecklist_' + new Date().toISOString().split('T')[0];
 
       if (botReply.includes('[ACTION: SLEEP')) {
@@ -2444,7 +2433,7 @@ Responde con cercanía, rigor y motivación en español. Si el usuario te pide e
     } catch (err) {
       console.error("Error en chat:", err);
       document.getElementById(loadingId)?.remove();
-      messagesBox.innerHTML += `<div style="background: #ef4444; color: white; padding: 8px 12px; border-radius: 10px; align-self: flex-start;">Error de IA: ${err.message}</div>`;
+      messagesBox.innerHTML += `<div style="background: #ef4444; color: white; padding: 8px 12px; border-radius: 10px; align-self: flex-start;">Error de IA: ${err.message}<br><small>Escribe <b>/key</b> para cambiar la API Key si te equivocaste.</small></div>`;
     }
   };
 
