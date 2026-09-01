@@ -2277,7 +2277,7 @@ function renderWeightChart() {
 }
 
 // ==========================================
-// ASISTENTE DE IA REAL CON GEMINI API (FIXED)
+// ASISTENTE DE IA REAL CON GEMINI API (DEFINITIVO)
 // ==========================================
 function setupTrainerChat() {
   const toggleBtn = document.getElementById('btn-toggle-trainer-chat');
@@ -2325,56 +2325,59 @@ function setupTrainerChat() {
     try {
       let apiKey = localStorage.getItem('gemini_api_key');
       if (!apiKey) {
-        apiKey = prompt("Introduce tu API Key de Google AI Studio:");
+        apiKey = prompt("Introduce tu clave API de Google AI Studio:");
         if (apiKey) {
-          localStorage.setItem('gemini_api_key', apiKey.trim());
+          apiKey = apiKey.trim();
+          localStorage.setItem('gemini_api_key', apiKey);
         } else {
           document.getElementById(loadingId)?.remove();
-          messagesBox.innerHTML += `<div style="background: #ef4444; color: white; padding: 8px 12px; border-radius: 10px; align-self: flex-start;">Falta la API Key de Gemini para continuar.</div>`;
+          messagesBox.innerHTML += `<div style="background: #ef4444; color: white; padding: 8px 12px; border-radius: 10px; align-self: flex-start;">Falta la clave de Gemini para continuar.</div>`;
           return;
         }
       }
 
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent`;
+      // Endpoint actualizado con alias 'gemini-1.5-flash-latest'
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${encodeURIComponent(apiKey)}`;
 
       const currentWeight = userProfile ? userProfile.weight : 80;
       const targetCals = document.getElementById('daily-target-calories')?.innerText || "2000 kcal";
 
       const systemPrompt = `Eres Alejandro Trainer Bot, un asistente experto en fitness, nutrición, suplementación y rendimiento deportivo. 
-      El usuario actual pesa ${currentWeight} kg y su objetivo calórico diario es ${targetCals}. 
-      Responde con cercanía, rigor y motivación. Si el usuario pide una acción, añade al final de tu respuesta:
-      - [ACTION: SLEEP, X] (donde X son las horas)
-      - [ACTION: WATER]
-      - [ACTION: CHECKLIST]
-      - [ACTION: INGREDIENT]`;
+El usuario actual pesa ${currentWeight} kg y su objetivo calórico diario es ${targetCals}. 
+Responde con cercanía, rigor y motivación en español. Si el usuario te pide explícitamente realizar una acción de la app, añade al final de tu mensaje una etiqueta oculta de comando:
+- [ACTION: SLEEP, X] (donde X son las horas)
+- [ACTION: WATER]
+- [ACTION: CHECKLIST]
+- [ACTION: INGREDIENT]`;
 
       const apiResponse = await fetch(url, {
         method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-          "x-goog-api-key": apiKey.trim()
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           contents: [
-            { role: "user", parts: [{ text: systemPrompt + "\n\nUsuario: " + text }] }
+            {
+              role: "user",
+              parts: [{ text: systemPrompt + "\n\nPetición del usuario: " + text }]
+            }
           ]
         })
       });
 
       const data = await apiResponse.json();
-      
+
       if (!apiResponse.ok) {
-        console.error("Error de la API de Google:", data);
+        console.error("Detalle del error:", data);
         throw new Error(data.error?.message || "Error HTTP " + apiResponse.status);
       }
 
-      let botReply = "No he podido procesar la respuesta de la IA.";
-      if (data.candidates && data.candidates[0].content.parts[0].text) {
+      let botReply = "No he podido procesar la respuesta.";
+      if (data.candidates && data.candidates[0]?.content?.parts?.[0]?.text) {
         botReply = data.candidates[0].content.parts[0].text;
       }
 
       document.getElementById(loadingId)?.remove();
 
+      // Intérprete de acciones del Agente
       const todayKey = 'dailyChecklist_' + new Date().toISOString().split('T')[0];
 
       if (botReply.includes('[ACTION: SLEEP')) {
