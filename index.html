@@ -86,7 +86,7 @@
 
       <section class="card summary-card">
         <h2>Resumen de Hoy</h2>
-        <div class="metrics-grid">
+        <div class="metric-box"><span class="metric-title">Grasa Corporal</span><span id="metric-body-fat" class="metric-value">-- %</span></div>
           <div class="metric-box"><span class="metric-title">Pasos</span><span id="metric-today-steps" class="metric-value">0</span></div>
           <div class="metric-box"><span class="metric-title">Gasto Entrenos</span><span id="metric-today-burn" class="metric-value">0 kcal</span></div>
           <div class="metric-box"><span class="metric-title">Pulso Reposo</span><span id="metric-resting-bpm" class="metric-value">-- bpm</span></div>
@@ -408,6 +408,20 @@
           <div id="form-weight-group" class="form-group">
             <label for="input-weight">Peso actual (kg):</label>
             <input type="number" step="0.1" id="input-weight" placeholder="Ej: 78.5">
+            
+            <div id="form-measurements-group" style="margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--card-border);">
+              <label style="margin-bottom: 8px; display: block; color: var(--accent-blue);">Medidas para % Grasa (Opcional):</label>
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="input-waist">Cintura (cm):</label>
+                  <input type="number" step="0.1" id="input-waist" placeholder="Ombligo">
+                </div>
+                <div class="form-group">
+                  <label for="input-neck">Cuello (cm):</label>
+                  <input type="number" step="0.1" id="input-neck" placeholder="Nuez">
+                </div>
+              </div>
+            </div>
           </div>
           <div id="form-bpm-group" class="form-group" style="display: none;">
             <label for="bpm">Pulsaciones actuales (BPM):</label>

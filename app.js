@@ -1558,6 +1558,13 @@ function updateDashboardMetrics() {
   const cravings = Array.isArray(allLogs) ? allLogs.filter(l => l.type === 'urgencia') : [];
   const cravingsEl = document.getElementById('metric-cravings-count');
   if (cravingsEl) cravingsEl.innerText = cravings.length;
+
+  // 5. Mostrar Porcentaje de Grasa
+  const bodyFatEl = document.getElementById('metric-body-fat');
+  const storedFat = localStorage.getItem('latestBodyFat');
+  if (bodyFatEl && storedFat) {
+    bodyFatEl.innerText = `${storedFat} %`;
+  }
 }
 
 function renderStepsChart() {
@@ -1960,15 +1967,36 @@ function initApp() {
 
       if (type === 'peso') {
         const weight = document.getElementById('input-weight').value;
+        const waist = document.getElementById('input-waist').value;
+        const neck = document.getElementById('input-neck').value;
+        
+        let finalNote = note;
+
         if (weight && userProfile) {
           userProfile.weight = Number(weight);
           localStorage.setItem('userProfile', JSON.stringify(userProfile));
           localStorage.setItem('lastWeighedDate', String(Date.now()));
+          
+          // Calculadora de Grasa Corporal (Fórmula Marina EEUU para hombres)
+          if (waist && neck && userProfile.height) {
+            const w = Number(waist);
+            const n = Number(neck);
+            const h = Number(userProfile.height);
+            // Fórmula: 495 / (1.0324 - 0.19077 * log10(cintura - cuello) + 0.15456 * log10(altura)) - 450
+            const bodyFat = (495 / (1.0324 - 0.19077 * Math.log10(w - n) + 0.15456 * Math.log10(h)) - 450).toFixed(1);
+            
+            if (!isNaN(bodyFat)) {
+              localStorage.setItem('latestBodyFat', bodyFat);
+              finalNote = `Cintura: ${w}cm | Cuello: ${n}cm | Grasa Estimada: ${bodyFat}% | ` + note;
+              alert(`¡Medidas registradas! Tu porcentaje de grasa estimado es ${bodyFat}%`);
+            }
+          }
+
           await saveProfileToCloud();
           await fetch(`${SUPABASE_URL}/rest/v1/body_metrics`, {
             method: "POST",
             headers: getAuthHeaders(),
-            body: JSON.stringify({ weight_kg: Number(weight), note })
+            body: JSON.stringify({ weight_kg: Number(weight), note: finalNote })
           });
         }
       } else if (type === 'vapeo') {
@@ -1989,7 +2017,7 @@ function initApp() {
       }
 
       form.reset();
-      alert('Datos guardados correctamente');
+      alert('Datos guardados correctamente en la nube');
       loadData();
     });
   }
