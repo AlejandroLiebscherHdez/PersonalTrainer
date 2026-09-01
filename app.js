@@ -2277,7 +2277,7 @@ function renderWeightChart() {
 }
 
 // ==========================================
-// ASISTENTE DE IA AGÉNTICO INTEGRAL (FULL APP CONTROL)
+// ASISTENTE DE IA ULTRA RÁPIDO & MULTI-PESTAÑA
 // ==========================================
 function setupTrainerChat() {
   const toggleBtn = document.getElementById('btn-toggle-trainer-chat');
@@ -2288,6 +2288,13 @@ function setupTrainerChat() {
   const messagesBox = document.getElementById('trainer-chat-messages');
 
   if (!toggleBtn || !chatWindow) return;
+
+  // Función auxiliar para cambiar de pestaña en la interfaz
+  const navigateToTab = (tabName) => {
+    const allButtons = Array.from(document.querySelectorAll('nav button, .nav-btn, .tab-btn, header button, button'));
+    const targetBtn = allButtons.find(b => b.innerText && b.innerText.toLowerCase().includes(tabName.toLowerCase()));
+    if (targetBtn) targetBtn.click();
+  };
 
   toggleBtn.addEventListener('click', () => {
     const isVisible = chatWindow.style.display === 'flex';
@@ -2329,7 +2336,7 @@ function setupTrainerChat() {
     messagesBox.scrollTop = messagesBox.scrollHeight;
 
     const loadingId = 'loading-' + Date.now();
-    messagesBox.innerHTML += `<div id="${loadingId}" style="background: #1f2a44; border: 1px solid var(--card-border); padding: 8px 12px; border-radius: 10px; align-self: flex-start; color: var(--text-muted);">🤖 Pensando...</div>`;
+    messagesBox.innerHTML += `<div id="${loadingId}" style="background: #1f2a44; border: 1px solid var(--card-border); padding: 8px 12px; border-radius: 10px; align-self: flex-start; color: var(--text-muted);">⚡ Ejecutando...</div>`;
     messagesBox.scrollTop = messagesBox.scrollHeight;
 
     try {
@@ -2348,31 +2355,34 @@ function setupTrainerChat() {
 
       const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${encodeURIComponent(apiKey)}`;
 
-      // Contexto biométrico del usuario
       const currentWeight = (typeof userProfile !== 'undefined' && userProfile?.weight) ? userProfile.weight : 80;
-      const currentHeight = (typeof userProfile !== 'undefined' && userProfile?.height) ? userProfile.height : 175;
       const targetCals = document.getElementById('daily-target-calories')?.innerText || "2000 kcal";
 
-      const systemPrompt = `Eres Alejandro Trainer Bot, asistente de alto rendimiento, nutrición deportiva, salud mental y control de hábitos.
-Datos del usuario: Peso: ${currentWeight} kg | Altura: ${currentHeight} cm | Objetivo calórico: ${targetCals}.
-
-Responde en español con rigor, empatía y enfoque práctico. Si el usuario solicita una acción en la web, incluye al final de tu respuesta una o varias etiquetas de comando según corresponda:
-- Registrar comida: [ACTION: ADD_MEAL, TipoComida(Desayuno|Almuerzo|Cena|Snack), NombrePlato, Kcal, ProteinaG, CarbsG, GrasasG]
-- Guardar receta: [ACTION: CREATE_RECIPE, NombreReceta, Kcal, ProteinaG, CarbsG, GrasasG, Ingredientes]
-- Marcar ejercicio completado: [ACTION: CHECK_EXERCISE, NombreEjercicio]
-- Añadir ejercicio a rutina: [ACTION: ADD_EXERCISE, Dia, NombreEjercicio, Series, Reps]
-- Iniciar respiración guiada: [ACTION: START_BREATHING, Segundos]
-- Activar modo urgencia / craving: [ACTION: HABIT_SOS]
-- Registrar recaída en hábito: [ACTION: HABIT_RELAPSE, Motivo]
-- Horas de sueño: [ACTION: SLEEP, Horas]
+      const systemPrompt = `Eres Alejandro Trainer Bot, coach de alto rendimiento y control de la app.
+REGLAS OBLIGATORIAS:
+1. Responde SIEMPRE en MÁXIMO 1 o 2 frases cortas (menos de 20 palabras). Sé directo y enérgico.
+2. NUNCA des explicaciones teóricas largas ni listas de pasos.
+3. Si el usuario pide una acción, añade SIEMPRE la etiqueta al final:
+- Protocolos de respiración/salud: [ACTION: PROTOCOL, Tipo(vagal|coherencia|escaneo|box|cervical)]
+- Registrar comida: [ACTION: ADD_MEAL, Tipo(Desayuno|Almuerzo|Cena|Snack), Nombre, Kcal, Prot, Carbs, Grasas]
+- Guardar receta: [ACTION: CREATE_RECIPE, Nombre, Kcal, Prot, Carbs, Grasas, Ingredientes]
+- Marcar ejercicio: [ACTION: CHECK_EXERCISE, NombreEjercicio]
+- Añadir ejercicio: [ACTION: ADD_EXERCISE, Dia, NombreEjercicio, Series, Reps]
+- Botón SOS urgencia vapeo: [ACTION: HABIT_SOS]
+- Registrar recaída: [ACTION: HABIT_RELAPSE, Motivo]
+- Horas sueño: [ACTION: SLEEP, Horas]
 - Sumar agua: [ACTION: WATER, Litros]
-- Completar checklist: [ACTION: CHECKLIST]`;
+- Checklist completo: [ACTION: CHECKLIST]`;
 
       const apiResponse = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          contents: [{ role: "user", parts: [{ text: systemPrompt + "\n\nSolicitud del usuario: " + text }] }]
+          contents: [{ role: "user", parts: [{ text: systemPrompt + "\n\nPetición: " + text }] }],
+          generationConfig: {
+            maxOutputTokens: 120, // Respuesta ultra rápida y económica
+            temperature: 0.2
+          }
         })
       });
 
@@ -2382,15 +2392,74 @@ Responde en español con rigor, empatía y enfoque práctico. Si el usuario soli
         throw new Error(data.error?.message || "Error HTTP " + apiResponse.status);
       }
 
-      let botReply = data.candidates?.[0]?.content?.parts?.[0]?.text || "No se pudo procesar la respuesta.";
+      let botReply = data.candidates?.[0]?.content?.parts?.[0]?.text || "Listo.";
       document.getElementById(loadingId)?.remove();
 
       // ==========================================
-      // DESPACHADOR DE ACCIONES (AGENT DISPATCHER)
+      // DESPACHADOR DE ACCIONES AUTOMÁTICAS
       // ==========================================
       const todayKey = 'dailyChecklist_' + new Date().toISOString().split('T')[0];
 
-      // 1. Nutrición: Añadir comida directa al registro
+      // 1. Salud & Respiración guiada
+      if (botReply.includes('[ACTION: PROTOCOL')) {
+        const match = botReply.match(/\[ACTION: PROTOCOL,\s*([^\]]+)\]/);
+        const protocolType = match ? match[1].trim().toLowerCase() : 'vagal';
+
+        navigateToTab('salud');
+
+        setTimeout(() => {
+          const selects = Array.from(document.querySelectorAll('select'));
+          const protocolSelect = selects.find(s => 
+            Array.from(s.options).some(opt => opt.text.includes('4-7-8') || opt.text.includes('Coherencia') || opt.text.includes('Vagal'))
+          );
+
+          if (protocolSelect) {
+            const targetIndex = Array.from(protocolSelect.options).findIndex(opt => {
+              const val = opt.text.toLowerCase();
+              if (protocolType.includes('vagal') || protocolType.includes('4-7-8')) return val.includes('4-7-8') || val.includes('vagal');
+              if (protocolType.includes('coherencia') || protocolType.includes('5-5')) return val.includes('5-5') || val.includes('coherencia');
+              if (protocolType.includes('escaneo') || protocolType.includes('corporal')) return val.includes('escaneo');
+              if (protocolType.includes('box') || protocolType.includes('cuadrada')) return val.includes('cuadrada') || val.includes('box');
+              if (protocolType.includes('cervical') || protocolType.includes('trapecio')) return val.includes('cervical');
+              return false;
+            });
+
+            if (targetIndex !== -1) {
+              protocolSelect.selectedIndex = targetIndex;
+              protocolSelect.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+
+            const parentCard = protocolSelect.closest('.card') || protocolSelect.parentElement;
+            const startBtn = parentCard?.querySelector('button');
+            if (startBtn) startBtn.click();
+            protocolSelect.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        }, 150);
+      }
+
+      // 2. Hábitos: Botón SOS Urgencia
+      if (botReply.includes('[ACTION: HABIT_SOS]')) {
+        navigateToTab('hábitos');
+        setTimeout(() => {
+          const sosBtn = document.getElementById('btn-habit-sos') || document.querySelector('button[id*="sos"], button[id*="urgencia"]');
+          if (sosBtn) {
+            sosBtn.click();
+            sosBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        }, 150);
+      }
+
+      // 3. Hábitos: Registrar recaída
+      if (botReply.includes('[ACTION: HABIT_RELAPSE')) {
+        const match = botReply.match(/\[ACTION: HABIT_RELAPSE,\s*([^\]]+)\]/);
+        const reason = match ? match[1].trim() : 'Recaída registrada por IA';
+        const habitHistory = JSON.parse(localStorage.getItem('vapeTrackerHistory') || '[]');
+        habitHistory.push({ date: new Date().toISOString(), reason: reason });
+        localStorage.setItem('vapeTrackerHistory', JSON.stringify(habitHistory));
+        if (typeof renderHabitStats === 'function') renderHabitStats();
+      }
+
+      // 4. Nutrición: Añadir comida al registro
       if (botReply.includes('[ACTION: ADD_MEAL')) {
         const match = botReply.match(/\[ACTION: ADD_MEAL,\s*([^,]+),\s*([^,]+),\s*([\d.]+),\s*([\d.]+),\s*([\d.]+),\s*([\d.]+)\]/);
         if (match) {
@@ -2413,7 +2482,7 @@ Responde en español con rigor, empatía y enfoque práctico. Si el usuario soli
         }
       }
 
-      // 2. Nutrición: Guardar nueva receta personalizada
+      // 5. Nutrición: Crear receta
       if (botReply.includes('[ACTION: CREATE_RECIPE')) {
         const match = botReply.match(/\[ACTION: CREATE_RECIPE,\s*([^,]+),\s*([\d.]+),\s*([\d.]+),\s*([\d.]+),\s*([\d.]+),\s*(.+)\]/);
         if (match) {
@@ -2434,19 +2503,22 @@ Responde en español con rigor, empatía y enfoque práctico. Si el usuario soli
         }
       }
 
-      // 3. Rutinas: Marcar ejercicio
+      // 6. Rutinas: Marcar ejercicio
       if (botReply.includes('[ACTION: CHECK_EXERCISE')) {
+        navigateToTab('rutinas');
         const match = botReply.match(/\[ACTION: CHECK_EXERCISE,\s*([^\]]+)\]/);
         if (match) {
           const exName = match[1].trim().toLowerCase();
-          document.querySelectorAll('.exercise-checkbox, input[type="checkbox"]').forEach(chk => {
-            const label = chk.closest('label')?.innerText.toLowerCase() || chk.parentElement?.innerText.toLowerCase() || '';
-            if (label.includes(exName)) chk.checked = true;
-          });
+          setTimeout(() => {
+            document.querySelectorAll('.exercise-checkbox, input[type="checkbox"]').forEach(chk => {
+              const label = chk.closest('label')?.innerText.toLowerCase() || chk.parentElement?.innerText.toLowerCase() || '';
+              if (label.includes(exName)) chk.checked = true;
+            });
+          }, 150);
         }
       }
 
-      // 4. Rutinas: Añadir ejercicio
+      // 7. Rutinas: Añadir ejercicio
       if (botReply.includes('[ACTION: ADD_EXERCISE')) {
         const match = botReply.match(/\[ACTION: ADD_EXERCISE,\s*([^,]+),\s*([^,]+),\s*([\d]+),\s*([^\]]+)\]/);
         if (match) {
@@ -2468,58 +2540,7 @@ Responde en español con rigor, empatía y enfoque práctico. Si el usuario soli
         }
       }
 
-      // 5. Salud: Selección y arranque de protocolo guiado
-      if (botReply.includes('[ACTION: PROTOCOL')) {
-        const match = botReply.match(/\[ACTION: PROTOCOL,\s*([^\]]+)\]/);
-        const protocolType = match ? match[1].trim().toLowerCase() : 'vagal';
-
-        // Buscar el selector del menú desplegable
-        const selects = Array.from(document.querySelectorAll('select'));
-        const protocolSelect = selects.find(s => 
-          Array.from(s.options).some(opt => opt.text.includes('4-7-8') || opt.text.includes('Coherencia'))
-        );
-
-        if (protocolSelect) {
-          // Encontrar la opción correspondiente según lo pedido
-          const targetIndex = Array.from(protocolSelect.options).findIndex(opt => {
-            const val = opt.text.toLowerCase();
-            if (protocolType.includes('vagal') || protocolType.includes('4-7-8')) return val.includes('4-7-8') || val.includes('vagal');
-            if (protocolType.includes('coherencia') || protocolType.includes('5-5')) return val.includes('5-5') || val.includes('coherencia');
-            if (protocolType.includes('escaneo') || protocolType.includes('corporal')) return val.includes('escaneo');
-            if (protocolType.includes('box') || protocolType.includes('cuadrada')) return val.includes('cuadrada') || val.includes('box');
-            if (protocolType.includes('cervical') || protocolType.includes('trapecio')) return val.includes('cervical');
-            return false;
-          });
-
-          if (targetIndex !== -1) {
-            protocolSelect.selectedIndex = targetIndex;
-            protocolSelect.dispatchEvent(new Event('change', { bubbles: true }));
-          }
-
-          // Buscar y pulsar el botón de iniciar que esté junto al selector
-          const parentCard = protocolSelect.closest('.card') || protocolSelect.parentElement;
-          const startBtn = parentCard?.querySelector('button') || document.querySelector('button[id*="breath"], button[id*="protocol"]');
-          if (startBtn) startBtn.click();
-        }
-      }
-
-      // 6. Hábitos: Botón SOS / Urgencia
-      if (botReply.includes('[ACTION: HABIT_SOS]')) {
-        const sosBtn = document.getElementById('btn-habit-sos') || document.getElementById('btn-urgencia-vape');
-        if (sosBtn) sosBtn.click();
-      }
-
-      // 7. Hábitos: Registrar recaída
-      if (botReply.includes('[ACTION: HABIT_RELAPSE')) {
-        const match = botReply.match(/\[ACTION: HABIT_RELAPSE,\s*([^\]]+)\]/);
-        const reason = match ? match[1].trim() : 'Recaída registrada';
-        const habitHistory = JSON.parse(localStorage.getItem('vapeTrackerHistory') || '[]');
-        habitHistory.push({ date: new Date().toISOString(), reason: reason });
-        localStorage.setItem('vapeTrackerHistory', JSON.stringify(habitHistory));
-        if (typeof renderHabitStats === 'function') renderHabitStats();
-      }
-
-      // 8. Métricas diarias básicas
+      // 8. Métricas rápidas
       if (botReply.includes('[ACTION: SLEEP')) {
         const match = botReply.match(/\[ACTION: SLEEP,\s*([\d.]+)\]/);
         const hours = match ? parseFloat(match[1]) : 8;
@@ -2552,7 +2573,7 @@ Responde en español con rigor, empatía y enfoque práctico. Si el usuario soli
         });
       }
 
-      // Limpiar etiquetas de comando antes de renderizar el mensaje final
+      // Limpiar etiquetas de comando del texto visible
       botReply = botReply.replace(/\[ACTION:.*?\]/g, '').trim();
 
       messagesBox.innerHTML += `<div style="background: #1f2a44; border: 1px solid var(--card-border); padding: 8px 12px; border-radius: 10px; align-self: flex-start; max-width: 80%; color: var(--text-main);">${botReply}</div>`;
@@ -2561,7 +2582,7 @@ Responde en español con rigor, empatía y enfoque práctico. Si el usuario soli
     } catch (err) {
       console.error("Error en chat:", err);
       document.getElementById(loadingId)?.remove();
-      messagesBox.innerHTML += `<div style="background: #ef4444; color: white; padding: 8px 12px; border-radius: 10px; align-self: flex-start;">Error de IA: ${err.message}<br><small>Escribe <b>/key</b> para cambiar la API Key.</small></div>`;
+      messagesBox.innerHTML += `<div style="background: #ef4444; color: white; padding: 8px 12px; border-radius: 10px; align-self: flex-start;">Error: ${err.message}</div>`;
     }
   };
 
