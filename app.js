@@ -1419,12 +1419,39 @@ function renderCoachEngine() {
   const bmr = (10 * userProfile.weight) + (6.25 * userProfile.height) - (5 * userProfile.age) + 5;
   const totalDeficitNeeded = userProfile.targetLossKg * 7700;
   const daysTotal = userProfile.weeks * 7;
-  const dailyDeficit = Math.round(totalDeficitNeeded / daysTotal);
+  let dailyDeficit = Math.round(totalDeficitNeeded / daysTotal);
+
+  // --- NUEVO: Algoritmo de Ajuste Metabólico ---
+  let stagnationModifier = 0;
+  let alertMessage = '';
+  
+  const validMetrics = (Array.isArray(allBodyMetrics) ? allBodyMetrics : [])
+    .filter(item => item.weight_kg)
+    .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+
+  if (validMetrics.length >= 2) {
+    const currentWeight = Number(validMetrics[validMetrics.length - 1].weight_kg);
+    const previousWeight = Number(validMetrics[validMetrics.length - 2].weight_kg);
+    
+    // Si el peso subió o se mantuvo igual respecto al registro anterior
+    if (currentWeight >= previousWeight) {
+      stagnationModifier = 150; 
+      alertMessage = `<div style="background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; padding: 10px; border-radius: 8px; margin-top: 10px; font-size: 0.85rem;">
+        <span style="color: #ef4444; font-weight: bold;">⚠️ Alerta de Estancamiento:</span> Tu peso no ha bajado. Hemos ajustado tu déficit (-150 kcal) para forzar la quema de grasa.
+      </div>`;
+    } else {
+      alertMessage = `<div style="background: rgba(16, 185, 129, 0.15); border: 1px solid #10b981; padding: 10px; border-radius: 8px; margin-top: 10px; font-size: 0.85rem;">
+        <span style="color: #10b981; font-weight: bold;">🔥 Metabolismo Óptimo:</span> Sigues bajando de peso. Mantenemos tu presupuesto calórico estable.
+      </div>`;
+    }
+  }
+  
+  dailyDeficit += stagnationModifier;
+  // ---------------------------------------------
 
   const now = new Date();
   const localTodayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
-  // 1. Filtrar todas las entradas registradas hoy en daily_health por fecha local
   const todayHealthEntries = (Array.isArray(allHealth) ? allHealth : []).filter(h => {
     if (!h.created_at) return false;
     const itemDate = new Date(h.created_at);
@@ -1439,7 +1466,6 @@ function renderCoachEngine() {
     return itemLocalStr === localTodayStr;
   });
 
-  // 2. Extraer el valor más alto registrado hoy
   const todaySteps = todayHealthEntries.reduce((max, h) => {
     const s = Number(h.steps) || 0;
     return s > max ? s : max;
@@ -1454,7 +1480,8 @@ function renderCoachEngine() {
 
   if (userProfile.hasWatch) {
     const maintenanceBase = Math.round(bmr * 1.2);
-    finalCalorieTarget = Math.max(1400, maintenanceBase + totalBurn - dailyDeficit);
+    // Añadimos un suelo calórico de 1200 para seguridad de salud
+    finalCalorieTarget = Math.max(1200, maintenanceBase + totalBurn - dailyDeficit);
     targetCalEl.innerText = `${finalCalorieTarget} kcal`;
 
     if (todayWorkouts.length > 0) {
@@ -1462,16 +1489,16 @@ function renderCoachEngine() {
     } else if (todaySteps > 8000) {
       adviceHTML = `<p>🚶 <strong>Gran volumen de pasos:</strong> Llevas ${todaySteps.toLocaleString()} pasos (+${stepsBurn} kcal). Mantente en <strong>${finalCalorieTarget} kcal</strong>.</p>`;
     } else {
-      adviceHTML = `<p>🎯 <strong>Día de recuperación:</strong> Para cumplir tu meta de perder ${userProfile.targetLossKg} kg, consume <strong>${finalCalorieTarget} kcal</strong>.</p>`;
+      adviceHTML = `<p>🎯 <strong>Día de recuperación:</strong> Para cumplir tu meta, consume <strong>${finalCalorieTarget} kcal</strong>.</p>`;
     }
   } else {
     const maintenanceBase = Math.round(bmr * 1.35);
-    finalCalorieTarget = Math.max(1400, maintenanceBase + workoutBurn - dailyDeficit);
+    finalCalorieTarget = Math.max(1200, maintenanceBase + workoutBurn - dailyDeficit);
     targetCalEl.innerText = `${finalCalorieTarget} kcal`;
     adviceHTML = `<p>🎯 <strong>Plan Estándar Activo:</strong> Tu objetivo son <strong>${finalCalorieTarget} kcal</strong>. Registra tus entrenamientos para ajustar el gasto.</p>`;
   }
 
-  container.innerHTML = adviceHTML;
+  container.innerHTML = adviceHTML + alertMessage;
 }
 
 function updateDashboardMetrics() {
