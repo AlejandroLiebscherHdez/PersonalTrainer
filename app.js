@@ -1413,14 +1413,22 @@ function renderCoachEngine() {
   const daysTotal = userProfile.weeks * 7;
   const dailyDeficit = Math.round(totalDeficitNeeded / daysTotal);
 
-  const todayDateStr = new Date().toISOString().split('T')[0];
-  const todayHealth = allHealth.find(h => h.created_at.startsWith(todayDateStr));
-  const todayWorkouts = allWorkouts.filter(w => w.created_at.startsWith(todayDateStr));
+  const now = new Date();
+  const localTodayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
-  // 1. Filtrar todas las entradas registradas hoy en daily_health
+  // 1. Filtrar todas las entradas registradas hoy en daily_health por fecha local
   const todayHealthEntries = (Array.isArray(allHealth) ? allHealth : []).filter(h => {
-    const d = h.date || (h.created_at ? h.created_at.split('T')[0] : '');
-    return d === todayDateStr;
+    if (!h.created_at) return false;
+    const itemDate = new Date(h.created_at);
+    const itemLocalStr = `${itemDate.getFullYear()}-${String(itemDate.getMonth() + 1).padStart(2, '0')}-${String(itemDate.getDate()).padStart(2, '0')}`;
+    return itemLocalStr === localTodayStr;
+  });
+
+  const todayWorkouts = (Array.isArray(allWorkouts) ? allWorkouts : []).filter(w => {
+    if (!w.created_at) return false;
+    const itemDate = new Date(w.created_at);
+    const itemLocalStr = `${itemDate.getFullYear()}-${String(itemDate.getMonth() + 1).padStart(2, '0')}-${String(itemDate.getDate()).padStart(2, '0')}`;
+    return itemLocalStr === localTodayStr;
   });
 
   // 2. Extraer el valor más alto registrado hoy
@@ -1442,9 +1450,9 @@ function renderCoachEngine() {
     targetCalEl.innerText = `${finalCalorieTarget} kcal`;
 
     if (todayWorkouts.length > 0) {
-      adviceHTML = `<p>🔥 <strong>¡Entrenamiento registrado!</strong> Gasto activo: +${totalBurn} kcal. Tu objetivo hoy es <strong>${finalCalorieTarget} kcal</strong>.</p>`;
+      adviceHTML = `<p>⚡ <strong>¡Entrenamiento registrado!</strong> Gasto activo: +${totalBurn} kcal. Tu objetivo hoy es <strong>${finalCalorieTarget} kcal</strong>.</p>`;
     } else if (todaySteps > 8000) {
-      adviceHTML = `<p>🚶‍♂️ <strong>Gran volumen de pasos:</strong> Llevas ${todaySteps.toLocaleString()} pasos (+${stepsBurn} kcal). Mantente en <strong>${finalCalorieTarget} kcal</strong>.</p>`;
+      adviceHTML = `<p>🚶 <strong>Gran volumen de pasos:</strong> Llevas ${todaySteps.toLocaleString()} pasos (+${stepsBurn} kcal). Mantente en <strong>${finalCalorieTarget} kcal</strong>.</p>`;
     } else {
       adviceHTML = `<p>🎯 <strong>Día de recuperación:</strong> Para cumplir tu meta de perder ${userProfile.targetLossKg} kg, consume <strong>${finalCalorieTarget} kcal</strong>.</p>`;
     }
@@ -1452,7 +1460,7 @@ function renderCoachEngine() {
     const maintenanceBase = Math.round(bmr * 1.35);
     finalCalorieTarget = Math.max(1400, maintenanceBase + workoutBurn - dailyDeficit);
     targetCalEl.innerText = `${finalCalorieTarget} kcal`;
-    adviceHTML = `<p>💪 <strong>Plan Estándar Activo:</strong> Tu objetivo son <strong>${finalCalorieTarget} kcal</strong>. Registra tus entrenamientos para ajustar el gasto.</p>`;
+    adviceHTML = `<p>🎯 <strong>Plan Estándar Activo:</strong> Tu objetivo son <strong>${finalCalorieTarget} kcal</strong>. Registra tus entrenamientos para ajustar el gasto.</p>`;
   }
 
   container.innerHTML = adviceHTML;
@@ -1503,11 +1511,9 @@ function updateDashboardMetrics() {
 function renderStepsChart() {
   const canvas = document.getElementById('stepsChart');
   if (!canvas || typeof Chart === 'undefined') return;
-
   const ctx = canvas.getContext('2d');
   const last7Health = Array.isArray(allHealth) ? allHealth.slice(-7) : [];
-
-  const labels = last7Health.map(h => new Date(h.created_at).toLocaleDateString([], { weekday: 'short', day: 'numeric' }));
+  const labels = last7Health.map(h => new Date(h.created_at).toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric' }));
   const stepsData = last7Health.map(h => h.steps || 0);
 
   if (stepsChartInstance) stepsChartInstance.destroy();
@@ -1526,10 +1532,18 @@ function renderStepsChart() {
     options: {
       responsive: true,
       scales: {
-        y: { grid: { color: '#1f2a44' }, ticks: { color: '#94a3b8' } },
-        x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
+        y: {
+          grid: { color: '#1f2a44' },
+          ticks: { color: '#94a3b8' }
+        },
+        x: {
+          grid: { display: false },
+          ticks: { color: '#94a3b8' }
+        }
       },
-      plugins: { legend: { display: false } }
+      plugins: {
+        legend: { display: false }
+      }
     }
   });
 }
