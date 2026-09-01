@@ -2277,7 +2277,7 @@ function renderWeightChart() {
 }
 
 // ==========================================
-// ASISTENTE DE IA AGÉNTICO CON REINTENTO AUTOMÁTICO
+// ASISTENTE DE IA AGÉNTICO (CONECTADO A TU BASE DE DATOS)
 // ==========================================
 function setupTrainerChat() {
   const toggleBtn = document.getElementById('btn-toggle-trainer-chat');
@@ -2289,10 +2289,14 @@ function setupTrainerChat() {
 
   if (!toggleBtn || !chatWindow) return;
 
-  const navigateToTab = (tabName) => {
-    const allButtons = Array.from(document.querySelectorAll('nav button, .nav-btn, .tab-btn, header button, button'));
-    const targetBtn = allButtons.find(b => b.innerText && b.innerText.toLowerCase().includes(tabName.toLowerCase()));
-    if (targetBtn) targetBtn.click();
+  // Navegador universal entre pestañas
+  const navigateToTab = (tabIdentifier) => {
+    const query = tabIdentifier.toLowerCase();
+    const btn = Array.from(document.querySelectorAll('.tab-btn')).find(b => 
+      (b.dataset.tab && b.dataset.tab.toLowerCase().includes(query)) ||
+      (b.innerText && b.innerText.toLowerCase().includes(query))
+    );
+    if (btn) btn.click();
   };
 
   toggleBtn.addEventListener('click', () => {
@@ -2355,30 +2359,29 @@ function setupTrainerChat() {
       const currentWeight = (typeof userProfile !== 'undefined' && userProfile?.weight) ? userProfile.weight : 80;
       const targetCals = document.getElementById('daily-target-calories')?.innerText || "2000 kcal";
 
-      const systemPrompt = `Eres Alejandro Trainer Bot, coach de alto rendimiento y control de la app.
+      const systemPrompt = `Eres Alejandro Trainer Bot, el agente inteligente de la app.
 REGLAS OBLIGATORIAS:
 1. Responde SIEMPRE de forma breve (1 o 2 frases concisas y motivadoras).
-2. Si el usuario pide una acción de la app, incluye obligatoriamente la etiqueta de comando al final:
-- Protocolos de respiración/salud: [ACTION: PROTOCOL, Tipo(vagal|coherencia|escaneo|box|cervical)]
-- Registrar comida: [ACTION: ADD_MEAL, Tipo(Desayuno|Almuerzo|Cena|Snack), Nombre, Kcal, Prot, Carbs, Grasas]
-- Guardar receta: [ACTION: CREATE_RECIPE, Nombre, Kcal, Prot, Carbs, Grasas, Ingredientes]
-- Marcar ejercicio: [ACTION: CHECK_EXERCISE, NombreEjercicio]
-- Añadir ejercicio: [ACTION: ADD_EXERCISE, Dia, NombreEjercicio, Series, Reps]
-- Botón SOS urgencia vapeo: [ACTION: HABIT_SOS]
-- Registrar recaída: [ACTION: HABIT_RELAPSE, Motivo]
-- Horas sueño: [ACTION: SLEEP, Horas]
+2. Si el usuario pide crear una receta, añadir comidas, ejercicios, hábitos o respiración, incluye SIEMPRE la etiqueta al final:
+- Guardar en Mis Recetas: [ACTION: CREATE_RECIPE, Titulo, Kcal, Proteina, Ingredientes]
+- Añadir comida al menú diario: [ACTION: ADD_MEAL, Tipo(desayuno|almuerzo|merienda|cena), NombrePlato, Kcal, Proteina]
+- Protocolos de respiración/salud: [ACTION: PROTOCOL, Tipo(breath|coherence|box|muscle|neck)]
+- Urgencia / Ansiedad por vapeo: [ACTION: HABIT_SOS]
+- Registrar recaída: [ACTION: HABIT_RELAPSE]
+- Marcar ejercicio de rutina: [ACTION: CHECK_EXERCISE, NombreEjercicio]
+- Añadir ejercicio a rutina: [ACTION: ADD_EXERCISE, Dia, NombreEjercicio, Series, Reps]
+- Horas de sueño: [ACTION: SLEEP, Horas]
 - Sumar agua: [ACTION: WATER, Litros]
-- Checklist completo: [ACTION: CHECKLIST]`;
+- Completar checklist: [ACTION: CHECKLIST]`;
 
       const requestPayload = {
         contents: [{ role: "user", parts: [{ text: systemPrompt + "\n\nPetición: " + text }] }],
         generationConfig: {
           maxOutputTokens: 800,
-          temperature: 0.3
+          temperature: 0.2
         }
       };
 
-      // Función con reintento automático ante saturación de tráfico
       const fetchWithRetry = async (retries = 2, delayMs = 1200) => {
         const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${encodeURIComponent(apiKey)}`;
         for (let i = 0; i <= retries; i++) {
@@ -2404,153 +2407,128 @@ REGLAS OBLIGATORIAS:
       document.getElementById(loadingId)?.remove();
 
       // ==========================================
-      // DESPACHADOR DE ACCIONES AUTOMÁTICAS
+      // DESPACHADOR DE ACCIONES REALES
       // ==========================================
       const todayKey = 'dailyChecklist_' + new Date().toISOString().split('T')[0];
 
-      // 1. Salud & Respiración guiada
-      if (botReply.includes('[ACTION: PROTOCOL')) {
-        const match = botReply.match(/\[ACTION: PROTOCOL,\s*([^\]]+)\]/);
-        const protocolType = match ? match[1].trim().toLowerCase() : 'vagal';
-
-        navigateToTab('salud');
-
-        setTimeout(() => {
-          const selects = Array.from(document.querySelectorAll('select'));
-          const protocolSelect = selects.find(s => 
-            Array.from(s.options).some(opt => opt.text.includes('4-7-8') || opt.text.includes('Coherencia') || opt.text.includes('Vagal'))
-          );
-
-          if (protocolSelect) {
-            const targetIndex = Array.from(protocolSelect.options).findIndex(opt => {
-              const val = opt.text.toLowerCase();
-              if (protocolType.includes('vagal') || protocolType.includes('4-7-8')) return val.includes('4-7-8') || val.includes('vagal');
-              if (protocolType.includes('coherencia') || protocolType.includes('5-5')) return val.includes('5-5') || val.includes('coherencia');
-              if (protocolType.includes('escaneo') || protocolType.includes('corporal')) return val.includes('escaneo');
-              if (protocolType.includes('box') || protocolType.includes('cuadrada')) return val.includes('cuadrada') || val.includes('box');
-              if (protocolType.includes('cervical') || protocolType.includes('trapecio')) return val.includes('cervical');
-              return false;
-            });
-
-            if (targetIndex !== -1) {
-              protocolSelect.selectedIndex = targetIndex;
-              protocolSelect.dispatchEvent(new Event('change', { bubbles: true }));
-            }
-
-            const parentCard = protocolSelect.closest('.card') || protocolSelect.parentElement;
-            const startBtn = parentCard?.querySelector('button');
-            if (startBtn) startBtn.click();
-            protocolSelect.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          }
-        }, 200);
-      }
-
-      // 2. Hábitos: Botón SOS Urgencia
-      if (botReply.includes('[ACTION: HABIT_SOS]')) {
-        navigateToTab('hábitos');
-        setTimeout(() => {
-          const sosBtn = document.getElementById('btn-habit-sos') || document.querySelector('button[id*="sos"], button[id*="urgencia"]');
-          if (sosBtn) {
-            sosBtn.click();
-            sosBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          }
-        }, 200);
-      }
-
-      // 3. Hábitos: Registrar recaída
-      if (botReply.includes('[ACTION: HABIT_RELAPSE')) {
-        const match = botReply.match(/\[ACTION: HABIT_RELAPSE,\s*([^\]]+)\]/);
-        const reason = match ? match[1].trim() : 'Recaída registrada por IA';
-        const habitHistory = JSON.parse(localStorage.getItem('vapeTrackerHistory') || '[]');
-        habitHistory.push({ date: new Date().toISOString(), reason: reason });
-        localStorage.setItem('vapeTrackerHistory', JSON.stringify(habitHistory));
-        if (typeof renderHabitStats === 'function') renderHabitStats();
-      }
-
-      // 4. Nutrición: Añadir comida al registro
-      if (botReply.includes('[ACTION: ADD_MEAL')) {
-        const match = botReply.match(/\[ACTION: ADD_MEAL,\s*([^,]+),\s*([^,]+),\s*([\d.]+),\s*([\d.]+),\s*([\d.]+),\s*([\d.]+)\]/);
-        if (match) {
-          const [, mealType, mealName, kcal, prot, carbs, fat] = match;
-          const newMeal = {
-            id: 'meal_' + Date.now(),
-            type: mealType.trim(),
-            name: mealName.trim(),
-            calories: parseFloat(kcal),
-            protein: parseFloat(prot),
-            carbs: parseFloat(carbs),
-            fat: parseFloat(fat),
-            date: new Date().toISOString().split('T')[0]
-          };
-          const savedMeals = JSON.parse(localStorage.getItem('userDailyMeals') || '[]');
-          savedMeals.push(newMeal);
-          localStorage.setItem('userDailyMeals', JSON.stringify(savedMeals));
-          if (typeof renderDailyMeals === 'function') renderDailyMeals();
-          if (typeof renderCoachEngine === 'function') renderCoachEngine();
-        }
-      }
-
-      // 5. Nutrición: Crear receta
+      // 1. Guardar receta en "Mis Recetas Guardadas"
       if (botReply.includes('[ACTION: CREATE_RECIPE')) {
-        const match = botReply.match(/\[ACTION: CREATE_RECIPE,\s*([^,]+),\s*([\d.]+),\s*([\d.]+),\s*([\d.]+),\s*([\d.]+),\s*(.+)\]/);
+        const match = botReply.match(/\[ACTION:\s*CREATE_RECIPE,\s*([^,]+),\s*([\d.]+),\s*([\d.]+),\s*([^\]]+)\]/);
         if (match) {
-          const [, name, kcal, prot, carbs, fat, ingredients] = match;
-          const newRecipe = {
-            id: 'rec_' + Date.now(),
-            name: name.trim(),
-            calories: parseFloat(kcal),
-            protein: parseFloat(prot),
-            carbs: parseFloat(carbs),
-            fat: parseFloat(fat),
-            ingredients: ingredients.replace(']', '').trim()
+          const [, title, kcal, prot, ingredients] = match;
+          const newRec = {
+            title: title.trim(),
+            desc: ingredients.trim(),
+            calories: Number(kcal),
+            protein: Number(prot)
           };
-          const savedRecipes = JSON.parse(localStorage.getItem('customUserRecipes') || '[]');
-          savedRecipes.push(newRecipe);
-          localStorage.setItem('customUserRecipes', JSON.stringify(savedRecipes));
-          if (typeof renderRecipeSelector === 'function') renderRecipeSelector();
+          savedRecipes.push(newRec);
+          localStorage.setItem('savedRecipes', JSON.stringify(savedRecipes));
+          renderSavedRecipes();
+          navigateToTab('diet');
         }
       }
 
-      // 6. Rutinas: Marcar ejercicio
-      if (botReply.includes('[ACTION: CHECK_EXERCISE')) {
-        navigateToTab('rutinas');
-        const match = botReply.match(/\[ACTION: CHECK_EXERCISE,\s*([^\]]+)\]/);
+      // 2. Añadir comida al menú del día
+      if (botReply.includes('[ACTION: ADD_MEAL')) {
+        const match = botReply.match(/\[ACTION:\s*ADD_MEAL,\s*([^,]+),\s*([^,]+),\s*([\d.]+),\s*([^\]]+)\]/);
         if (match) {
-          const exName = match[1].trim().toLowerCase();
-          setTimeout(() => {
-            document.querySelectorAll('.exercise-checkbox, input[type="checkbox"]').forEach(chk => {
-              const label = chk.closest('label')?.innerText.toLowerCase() || chk.parentElement?.innerText.toLowerCase() || '';
-              if (label.includes(exName)) chk.checked = true;
+          const [, mealType, mealName, kcal, prot] = match;
+          if (!customDietPlan) generateBaseDietPlan();
+          
+          const typeClean = mealType.toLowerCase().trim();
+          let targetIdx = 1; // Almuerzo por defecto
+          if (typeClean.includes('desayun')) targetIdx = 0;
+          else if (typeClean.includes('almuerz') || typeClean.includes('comid')) targetIdx = 1;
+          else if (typeClean.includes('meriend') || typeClean.includes('snack')) targetIdx = 2;
+          else if (typeClean.includes('cena')) targetIdx = 3;
+
+          if (customDietPlan && customDietPlan[targetIdx]) {
+            customDietPlan[targetIdx].items.push(`${mealName.trim()} (${Number(kcal)} kcal, ${Number(prot)}g P)`);
+            customDietPlan[targetIdx].kcal += Number(kcal);
+            localStorage.setItem('customUserDietPlan', JSON.stringify(customDietPlan));
+            renderDietMeals();
+            if (typeof renderCoachEngine === 'function') renderCoachEngine();
+            navigateToTab('diet');
+          }
+        }
+      }
+
+      // 3. Protocolos de Salud y Respiración
+      if (botReply.includes('[ACTION: PROTOCOL')) {
+        const match = botReply.match(/\[ACTION:\s*PROTOCOL,\s*([^\]]+)\]/);
+        const protocolType = match ? match[1].trim().toLowerCase() : 'breath';
+
+        navigateToTab('health');
+        setTimeout(() => {
+          const typeSelect = document.getElementById('relax-routine-type');
+          const btnStart = document.getElementById('btn-start-relax');
+          if (typeSelect) {
+            if (protocolType.includes('vagal') || protocolType.includes('4-7-8') || protocolType.includes('breath')) typeSelect.value = 'breath';
+            else if (protocolType.includes('coherence') || protocolType.includes('5-5')) typeSelect.value = 'coherence';
+            else if (protocolType.includes('box') || protocolType.includes('cuadrad')) typeSelect.value = 'box';
+            else if (protocolType.includes('muscle') || protocolType.includes('escan')) typeSelect.value = 'muscle';
+            else if (protocolType.includes('neck') || protocolType.includes('cervic')) typeSelect.value = 'neck';
+          }
+          if (btnStart) btnStart.click();
+        }, 200);
+      }
+
+      // 4. Hábitos: Urgencia (Craving)
+      if (botReply.includes('[ACTION: HABIT_SOS]')) {
+        navigateToTab('habits');
+        setTimeout(() => {
+          const btnCraving = document.getElementById('btn-craving');
+          if (btnCraving) btnCraving.click();
+        }, 200);
+      }
+
+      // 5. Hábitos: Registrar Recaída
+      if (botReply.includes('[ACTION: HABIT_RELAPSE]')) {
+        navigateToTab('habits');
+        setTimeout(() => {
+          const btnReset = document.getElementById('btn-reset-timer');
+          if (btnReset) btnReset.click();
+        }, 200);
+      }
+
+      // 6. Rutinas: Marcar ejercicio completado
+      if (botReply.includes('[ACTION: CHECK_EXERCISE')) {
+        navigateToTab('fitness');
+        const match = botReply.match(/\[ACTION:\s*CHECK_EXERCISE,\s*([^\]]+)\]/);
+        if (match && customRoutines) {
+          const searchName = match[1].trim().toLowerCase();
+          customRoutines.forEach((r, dIdx) => {
+            r.exercises.forEach((ex, eIdx) => {
+              if (ex[0].toLowerCase().includes(searchName)) {
+                checkedExercises[`${dIdx}${eIdx}`] = true;
+              }
             });
-          }, 200);
+          });
+          localStorage.setItem('checkedExercises_' + new Date().toISOString().split('T')[0], JSON.stringify(checkedExercises));
+          renderCurrentRoutine();
         }
       }
 
       // 7. Rutinas: Añadir ejercicio
       if (botReply.includes('[ACTION: ADD_EXERCISE')) {
-        const match = botReply.match(/\[ACTION: ADD_EXERCISE,\s*([^,]+),\s*([^,]+),\s*([\d]+),\s*([^\]]+)\]/);
-        if (match) {
-          const [, day, name, sets, reps] = match;
-          const userRoutines = JSON.parse(localStorage.getItem('customUserRoutines') || '[]');
-          const targetDay = userRoutines.find(r => r.day.toLowerCase() === day.trim().toLowerCase());
+        const match = botReply.match(/\[ACTION:\s*ADD_EXERCISE,\s*([^,]+),\s*([^,]+),\s*([\d]+),\s*([^\]]+)\]/);
+        if (match && customRoutines) {
+          const [, day, exName, sets, reps] = match;
+          const targetDay = customRoutines.find(r => r.day.toLowerCase().includes(day.trim().toLowerCase())) || customRoutines[0];
           if (targetDay) {
-            targetDay.exercises = targetDay.exercises || [];
-            targetDay.exercises.push([name.trim(), `${sets} series`, `${reps} reps`]);
-          } else {
-            userRoutines.push({
-              day: day.trim(),
-              focus: 'Personalizado',
-              exercises: [[name.trim(), `${sets} series`, `${reps} reps`]]
-            });
+            targetDay.exercises.push([exName.trim(), `${sets} x ${reps}`, "20"]);
+            localStorage.setItem('customUserRoutines', JSON.stringify(customRoutines));
+            renderCurrentRoutine();
+            renderVolumeChart();
+            navigateToTab('fitness');
           }
-          localStorage.setItem('customUserRoutines', JSON.stringify(userRoutines));
-          if (typeof renderRoutines === 'function') renderRoutines();
         }
       }
 
-      // 8. Métricas rápidas
+      // 8. Métricas diarias (Agua, Sueño, Checklist)
       if (botReply.includes('[ACTION: SLEEP')) {
-        const match = botReply.match(/\[ACTION: SLEEP,\s*([\d.]+)\]/);
+        const match = botReply.match(/\[ACTION:\s*SLEEP,\s*([\d.]+)\]/);
         const hours = match ? parseFloat(match[1]) : 8;
         dailyChecklist.sleep = hours;
         localStorage.setItem(todayKey, JSON.stringify(dailyChecklist));
@@ -2560,8 +2538,8 @@ REGLAS OBLIGATORIAS:
       }
 
       if (botReply.includes('[ACTION: WATER')) {
-        const match = botReply.match(/\[ACTION: WATER,\s*([\d.]+)\]/);
-        const amount = match ? parseFloat(match[1]) : 0.5;
+        const match = botReply.match(/\[ACTION:\s*WATER,\s*([\d.]+)\]/);
+        const amount = match ? parseFloat(match[1]) : 0.25;
         dailyChecklist.water = (Number(dailyChecklist.water) || 0) + amount;
         localStorage.setItem(todayKey, JSON.stringify(dailyChecklist));
         const waterDisplay = document.getElementById('water-val-display');
@@ -2569,16 +2547,12 @@ REGLAS OBLIGATORIAS:
       }
 
       if (botReply.includes('[ACTION: CHECKLIST]')) {
-        dailyChecklist.creatine = true;
-        dailyChecklist.protein = true;
-        dailyChecklist.steps = true;
-        dailyChecklist.workout = true;
-        dailyChecklist.clean = true;
-        localStorage.setItem(todayKey, JSON.stringify(dailyChecklist));
         ['creatine', 'protein', 'steps', 'workout', 'clean'].forEach(k => {
+          dailyChecklist[k] = true;
           const el = document.getElementById('chk-' + k);
           if (el) el.checked = true;
         });
+        localStorage.setItem(todayKey, JSON.stringify(dailyChecklist));
       }
 
       botReply = botReply.replace(/\[ACTION:.*?\]/g, '').trim();
