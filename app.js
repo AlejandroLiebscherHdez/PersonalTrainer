@@ -2277,7 +2277,7 @@ function renderWeightChart() {
 }
 
 // ==========================================
-// ASISTENTE DE IA REAL (GEMINI 3.6 FLASH)
+// ASISTENTE DE IA AGÉNTICO INTEGRAL (FULL APP CONTROL)
 // ==========================================
 function setupTrainerChat() {
   const toggleBtn = document.getElementById('btn-toggle-trainer-chat');
@@ -2314,13 +2314,12 @@ function setupTrainerChat() {
     const text = inputEl.value.trim();
     if (!text) return;
 
-    // Comando rápido para cambiar la API Key en cualquier momento
     if (text.toLowerCase() === '/key' || text.toLowerCase() === 'cambiar clave' || text.toLowerCase() === '/reset') {
       inputEl.value = '';
-      const newKey = prompt("Introduce tu nueva API Key de Google AI Studio:");
+      const newKey = prompt("Introduce tu API Key de Google AI Studio:");
       if (newKey) {
         localStorage.setItem('gemini_api_key', newKey.trim());
-        messagesBox.innerHTML += `<div style="background: #10b981; color: white; padding: 8px 12px; border-radius: 10px; align-self: flex-start;">✅ API Key actualizada correctamente.</div>`;
+        messagesBox.innerHTML += `<div style="background: #10b981; color: white; padding: 8px 12px; border-radius: 10px; align-self: flex-start;">✅ API Key actualizada.</div>`;
       }
       return;
     }
@@ -2342,52 +2341,185 @@ function setupTrainerChat() {
           localStorage.setItem('gemini_api_key', apiKey);
         } else {
           document.getElementById(loadingId)?.remove();
-          messagesBox.innerHTML += `<div style="background: #ef4444; color: white; padding: 8px 12px; border-radius: 10px; align-self: flex-start;">Falta la clave de Gemini para continuar. Escribe <b>/key</b> para añadirla.</div>`;
+          messagesBox.innerHTML += `<div style="background: #ef4444; color: white; padding: 8px 12px; border-radius: 10px; align-self: flex-start;">Falta la clave de Gemini. Escribe <b>/key</b> para añadirla.</div>`;
           return;
         }
       }
 
-      // Endpoint oficial con el modelo gemini-3.6-flash
       const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${encodeURIComponent(apiKey)}`;
 
-      const currentWeight = userProfile ? userProfile.weight : 80;
+      // Contexto biométrico del usuario
+      const currentWeight = (typeof userProfile !== 'undefined' && userProfile?.weight) ? userProfile.weight : 80;
+      const currentHeight = (typeof userProfile !== 'undefined' && userProfile?.height) ? userProfile.height : 175;
       const targetCals = document.getElementById('daily-target-calories')?.innerText || "2000 kcal";
 
-      const systemPrompt = `Eres Alejandro Trainer Bot, un asistente experto en fitness, nutrición, suplementación y rendimiento deportivo. 
-El usuario actual pesa ${currentWeight} kg y su objetivo calórico diario es ${targetCals}. 
-Responde con cercanía, rigor y motivación en español. Si el usuario pide explícitamente realizar una acción de la app, añade al final de tu respuesta una etiqueta oculta de comando:
-- [ACTION: SLEEP, X] (donde X son las horas)
-- [ACTION: WATER]
-- [ACTION: CHECKLIST]
-- [ACTION: INGREDIENT]`;
+      const systemPrompt = `Eres Alejandro Trainer Bot, asistente de alto rendimiento, nutrición deportiva, salud mental y control de hábitos.
+Datos del usuario: Peso: ${currentWeight} kg | Altura: ${currentHeight} cm | Objetivo calórico: ${targetCals}.
+
+Responde en español con rigor, empatía y enfoque práctico. Si el usuario solicita una acción en la web, incluye al final de tu respuesta una o varias etiquetas de comando según corresponda:
+- Registrar comida: [ACTION: ADD_MEAL, TipoComida(Desayuno|Almuerzo|Cena|Snack), NombrePlato, Kcal, ProteinaG, CarbsG, GrasasG]
+- Guardar receta: [ACTION: CREATE_RECIPE, NombreReceta, Kcal, ProteinaG, CarbsG, GrasasG, Ingredientes]
+- Marcar ejercicio completado: [ACTION: CHECK_EXERCISE, NombreEjercicio]
+- Añadir ejercicio a rutina: [ACTION: ADD_EXERCISE, Dia, NombreEjercicio, Series, Reps]
+- Iniciar respiración guiada: [ACTION: START_BREATHING, Segundos]
+- Activar modo urgencia / craving: [ACTION: HABIT_SOS]
+- Registrar recaída en hábito: [ACTION: HABIT_RELAPSE, Motivo]
+- Horas de sueño: [ACTION: SLEEP, Horas]
+- Sumar agua: [ACTION: WATER, Litros]
+- Completar checklist: [ACTION: CHECKLIST]`;
 
       const apiResponse = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          contents: [
-            { role: "user", parts: [{ text: systemPrompt + "\n\nPetición: " + text }] }
-          ]
+          contents: [{ role: "user", parts: [{ text: systemPrompt + "\n\nSolicitud del usuario: " + text }] }]
         })
       });
 
       const data = await apiResponse.json();
 
       if (!apiResponse.ok) {
-        console.error("Error de Gemini:", data);
         throw new Error(data.error?.message || "Error HTTP " + apiResponse.status);
       }
 
-      let botReply = "No he podido procesar la respuesta.";
-      if (data.candidates && data.candidates[0]?.content?.parts?.[0]?.text) {
-        botReply = data.candidates[0].content.parts[0].text;
-      }
-
+      let botReply = data.candidates?.[0]?.content?.parts?.[0]?.text || "No se pudo procesar la respuesta.";
       document.getElementById(loadingId)?.remove();
 
-      // Intérprete de acciones del Agente
+      // ==========================================
+      // DESPACHADOR DE ACCIONES (AGENT DISPATCHER)
+      // ==========================================
       const todayKey = 'dailyChecklist_' + new Date().toISOString().split('T')[0];
 
+      // 1. Nutrición: Añadir comida directa al registro
+      if (botReply.includes('[ACTION: ADD_MEAL')) {
+        const match = botReply.match(/\[ACTION: ADD_MEAL,\s*([^,]+),\s*([^,]+),\s*([\d.]+),\s*([\d.]+),\s*([\d.]+),\s*([\d.]+)\]/);
+        if (match) {
+          const [, mealType, mealName, kcal, prot, carbs, fat] = match;
+          const newMeal = {
+            id: 'meal_' + Date.now(),
+            type: mealType.trim(),
+            name: mealName.trim(),
+            calories: parseFloat(kcal),
+            protein: parseFloat(prot),
+            carbs: parseFloat(carbs),
+            fat: parseFloat(fat),
+            date: new Date().toISOString().split('T')[0]
+          };
+          const savedMeals = JSON.parse(localStorage.getItem('userDailyMeals') || '[]');
+          savedMeals.push(newMeal);
+          localStorage.setItem('userDailyMeals', JSON.stringify(savedMeals));
+          if (typeof renderDailyMeals === 'function') renderDailyMeals();
+          if (typeof renderCoachEngine === 'function') renderCoachEngine();
+        }
+      }
+
+      // 2. Nutrición: Guardar nueva receta personalizada
+      if (botReply.includes('[ACTION: CREATE_RECIPE')) {
+        const match = botReply.match(/\[ACTION: CREATE_RECIPE,\s*([^,]+),\s*([\d.]+),\s*([\d.]+),\s*([\d.]+),\s*([\d.]+),\s*(.+)\]/);
+        if (match) {
+          const [, name, kcal, prot, carbs, fat, ingredients] = match;
+          const newRecipe = {
+            id: 'rec_' + Date.now(),
+            name: name.trim(),
+            calories: parseFloat(kcal),
+            protein: parseFloat(prot),
+            carbs: parseFloat(carbs),
+            fat: parseFloat(fat),
+            ingredients: ingredients.replace(']', '').trim()
+          };
+          const savedRecipes = JSON.parse(localStorage.getItem('customUserRecipes') || '[]');
+          savedRecipes.push(newRecipe);
+          localStorage.setItem('customUserRecipes', JSON.stringify(savedRecipes));
+          if (typeof renderRecipeSelector === 'function') renderRecipeSelector();
+        }
+      }
+
+      // 3. Rutinas: Marcar ejercicio
+      if (botReply.includes('[ACTION: CHECK_EXERCISE')) {
+        const match = botReply.match(/\[ACTION: CHECK_EXERCISE,\s*([^\]]+)\]/);
+        if (match) {
+          const exName = match[1].trim().toLowerCase();
+          document.querySelectorAll('.exercise-checkbox, input[type="checkbox"]').forEach(chk => {
+            const label = chk.closest('label')?.innerText.toLowerCase() || chk.parentElement?.innerText.toLowerCase() || '';
+            if (label.includes(exName)) chk.checked = true;
+          });
+        }
+      }
+
+      // 4. Rutinas: Añadir ejercicio
+      if (botReply.includes('[ACTION: ADD_EXERCISE')) {
+        const match = botReply.match(/\[ACTION: ADD_EXERCISE,\s*([^,]+),\s*([^,]+),\s*([\d]+),\s*([^\]]+)\]/);
+        if (match) {
+          const [, day, name, sets, reps] = match;
+          const userRoutines = JSON.parse(localStorage.getItem('customUserRoutines') || '[]');
+          const targetDay = userRoutines.find(r => r.day.toLowerCase() === day.trim().toLowerCase());
+          if (targetDay) {
+            targetDay.exercises = targetDay.exercises || [];
+            targetDay.exercises.push([name.trim(), `${sets} series`, `${reps} reps`]);
+          } else {
+            userRoutines.push({
+              day: day.trim(),
+              focus: 'Personalizado',
+              exercises: [[name.trim(), `${sets} series`, `${reps} reps`]]
+            });
+          }
+          localStorage.setItem('customUserRoutines', JSON.stringify(userRoutines));
+          if (typeof renderRoutines === 'function') renderRoutines();
+        }
+      }
+
+      // 5. Salud: Selección y arranque de protocolo guiado
+      if (botReply.includes('[ACTION: PROTOCOL')) {
+        const match = botReply.match(/\[ACTION: PROTOCOL,\s*([^\]]+)\]/);
+        const protocolType = match ? match[1].trim().toLowerCase() : 'vagal';
+
+        // Buscar el selector del menú desplegable
+        const selects = Array.from(document.querySelectorAll('select'));
+        const protocolSelect = selects.find(s => 
+          Array.from(s.options).some(opt => opt.text.includes('4-7-8') || opt.text.includes('Coherencia'))
+        );
+
+        if (protocolSelect) {
+          // Encontrar la opción correspondiente según lo pedido
+          const targetIndex = Array.from(protocolSelect.options).findIndex(opt => {
+            const val = opt.text.toLowerCase();
+            if (protocolType.includes('vagal') || protocolType.includes('4-7-8')) return val.includes('4-7-8') || val.includes('vagal');
+            if (protocolType.includes('coherencia') || protocolType.includes('5-5')) return val.includes('5-5') || val.includes('coherencia');
+            if (protocolType.includes('escaneo') || protocolType.includes('corporal')) return val.includes('escaneo');
+            if (protocolType.includes('box') || protocolType.includes('cuadrada')) return val.includes('cuadrada') || val.includes('box');
+            if (protocolType.includes('cervical') || protocolType.includes('trapecio')) return val.includes('cervical');
+            return false;
+          });
+
+          if (targetIndex !== -1) {
+            protocolSelect.selectedIndex = targetIndex;
+            protocolSelect.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+
+          // Buscar y pulsar el botón de iniciar que esté junto al selector
+          const parentCard = protocolSelect.closest('.card') || protocolSelect.parentElement;
+          const startBtn = parentCard?.querySelector('button') || document.querySelector('button[id*="breath"], button[id*="protocol"]');
+          if (startBtn) startBtn.click();
+        }
+      }
+
+      // 6. Hábitos: Botón SOS / Urgencia
+      if (botReply.includes('[ACTION: HABIT_SOS]')) {
+        const sosBtn = document.getElementById('btn-habit-sos') || document.getElementById('btn-urgencia-vape');
+        if (sosBtn) sosBtn.click();
+      }
+
+      // 7. Hábitos: Registrar recaída
+      if (botReply.includes('[ACTION: HABIT_RELAPSE')) {
+        const match = botReply.match(/\[ACTION: HABIT_RELAPSE,\s*([^\]]+)\]/);
+        const reason = match ? match[1].trim() : 'Recaída registrada';
+        const habitHistory = JSON.parse(localStorage.getItem('vapeTrackerHistory') || '[]');
+        habitHistory.push({ date: new Date().toISOString(), reason: reason });
+        localStorage.setItem('vapeTrackerHistory', JSON.stringify(habitHistory));
+        if (typeof renderHabitStats === 'function') renderHabitStats();
+      }
+
+      // 8. Métricas diarias básicas
       if (botReply.includes('[ACTION: SLEEP')) {
         const match = botReply.match(/\[ACTION: SLEEP,\s*([\d.]+)\]/);
         const hours = match ? parseFloat(match[1]) : 8;
@@ -2396,16 +2528,18 @@ Responde con cercanía, rigor y motivación en español. Si el usuario pide expl
         const sleepDisplay = document.getElementById('sleep-val-display');
         if (sleepDisplay) sleepDisplay.innerText = `${hours} h`;
         if (typeof renderCoachEngine === 'function') renderCoachEngine();
-        botReply = botReply.replace(/\[ACTION:.*?\]/g, '');
-      } 
-      else if (botReply.includes('[ACTION: WATER]')) {
-        dailyChecklist.water = (Number(dailyChecklist.water) || 0) + 0.5;
+      }
+
+      if (botReply.includes('[ACTION: WATER')) {
+        const match = botReply.match(/\[ACTION: WATER,\s*([\d.]+)\]/);
+        const amount = match ? parseFloat(match[1]) : 0.5;
+        dailyChecklist.water = (Number(dailyChecklist.water) || 0) + amount;
         localStorage.setItem(todayKey, JSON.stringify(dailyChecklist));
         const waterDisplay = document.getElementById('water-val-display');
         if (waterDisplay) waterDisplay.innerText = `${dailyChecklist.water.toFixed(2)} L`;
-        botReply = botReply.replace(/\[ACTION:.*?\]/g, '');
       }
-      else if (botReply.includes('[ACTION: CHECKLIST]')) {
+
+      if (botReply.includes('[ACTION: CHECKLIST]')) {
         dailyChecklist.creatine = true;
         dailyChecklist.protein = true;
         dailyChecklist.steps = true;
@@ -2416,16 +2550,10 @@ Responde con cercanía, rigor y motivación en español. Si el usuario pide expl
           const el = document.getElementById('chk-' + k);
           if (el) el.checked = true;
         });
-        botReply = botReply.replace(/\[ACTION:.*?\]/g, '');
       }
-      else if (botReply.includes('[ACTION: INGREDIENT]')) {
-        const newIng = { name: 'Arroz Basmati Extra', weight: 100, calories: 350, protein: 7 };
-        userIngredients.push(newIng);
-        localStorage.setItem('userIngredients', JSON.stringify(userIngredients));
-        if (typeof renderIngredients === 'function') renderIngredients();
-        if (typeof renderRecipeSelector === 'function') renderRecipeSelector();
-        botReply = botReply.replace(/\[ACTION:.*?\]/g, '');
-      }
+
+      // Limpiar etiquetas de comando antes de renderizar el mensaje final
+      botReply = botReply.replace(/\[ACTION:.*?\]/g, '').trim();
 
       messagesBox.innerHTML += `<div style="background: #1f2a44; border: 1px solid var(--card-border); padding: 8px 12px; border-radius: 10px; align-self: flex-start; max-width: 80%; color: var(--text-main);">${botReply}</div>`;
       messagesBox.scrollTop = messagesBox.scrollHeight;
@@ -2433,7 +2561,7 @@ Responde con cercanía, rigor y motivación en español. Si el usuario pide expl
     } catch (err) {
       console.error("Error en chat:", err);
       document.getElementById(loadingId)?.remove();
-      messagesBox.innerHTML += `<div style="background: #ef4444; color: white; padding: 8px 12px; border-radius: 10px; align-self: flex-start;">Error de IA: ${err.message}<br><small>Escribe <b>/key</b> para cambiar la API Key si te equivocaste.</small></div>`;
+      messagesBox.innerHTML += `<div style="background: #ef4444; color: white; padding: 8px 12px; border-radius: 10px; align-self: flex-start;">Error de IA: ${err.message}<br><small>Escribe <b>/key</b> para cambiar la API Key.</small></div>`;
     }
   };
 
