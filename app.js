@@ -1414,29 +1414,68 @@ function renderCoachEngine() {
 }
 
 function updateDashboardMetrics() {
-  const bpmEl = document.getElementById('metric-resting-bpm');
-  const stepsEl = document.getElementById('metric-today-steps');
-  const burnEl = document.getElementById('metric-today-burn');
   const todayDateStr = new Date().toISOString().split('T')[0];
-  const todayHealth = allHealth.find(h => h.created_at.startsWith(todayDateStr));
-  const todayWorkouts = allWorkouts.filter(w => w.created_at.startsWith(todayDateStr));
+  
+  // Buscar el registro de salud de hoy (puede venir de Apple Health / Atajos)
+  const todayHealth = Array.isArray(allHealth) ? allHealth.find(h => h.created_at && h.created_at.startsWith(todayDateStr)) : null;
+  const todayWorkouts = Array.isArray(allWorkouts) ? allWorkouts.filter(w => w.created_at && w.created_at.startsWith(todayDateStr)) : [];
 
-  const totalWkBurn = todayWorkouts.reduce((acc, w) => acc + (w.active_calories ? Number(w.active_calories) : 250), 0);
-  if (burnEl) burnEl.innerText = `${totalWkBurn} kcal`;
-
-  if (!userProfile || !userProfile.hasWatch) {
-    if (bpmEl) bpmEl.innerText = "N/A";
-    if (stepsEl) stepsEl.innerText = "Manual";
-  } else {
-    if (stepsEl) stepsEl.innerText = todayHealth && todayHealth.steps ? Number(todayHealth.steps).toLocaleString() : '0';
-    if (bpmEl && allHealth.length > 0) {
-      bpmEl.innerText = `${allHealth[allHealth.length - 1].resting_bpm || '--'} bpm`;
-    }
+  // Extraer los pasos reales de la base de datos
+  const stepsEl = document.getElementById('metric-today-steps');
+  if (stepsEl) {
+    const rawSteps = todayHealth && todayHealth.steps ? Number(todayHealth.steps) : 0;
+    stepsEl.innerText = rawSteps.toLocaleString();
   }
 
-  const cravings = allLogs.filter(l => l.type === 'urgencia');
+  const burnEl = document.getElementById('metric-today-burn');
+  if (burnEl) {
+    const totalWkBurn = todayWorkouts.reduce((acc, w) => acc + (w.active_calories ? Number(w.active_calories) : 250), 0);
+    burnEl.innerText = `${totalWkBurn} kcal`;
+  }
+
+  const bpmEl = document.getElementById('metric-resting-bpm');
+  if (bpmEl && Array.isArray(allHealth) && allHealth.length > 0) {
+    const lastHealthWithBpm = [...allHealth].reverse().find(h => h.resting_bpm);
+    bpmEl.innerText = lastHealthWithBpm ? `${lastHealthWithBpm.resting_bpm} bpm` : '-- bpm';
+  }
+
+  const cravings = Array.isArray(allLogs) ? allLogs.filter(l => l.type === 'urgencia') : [];
   const cravingsEl = document.getElementById('metric-cravings-count');
   if (cravingsEl) cravingsEl.innerText = cravings.length;
+}
+
+function renderStepsChart() {
+  const canvas = document.getElementById('stepsChart');
+  if (!canvas || typeof Chart === 'undefined') return;
+
+  const ctx = canvas.getContext('2d');
+  const last7Health = Array.isArray(allHealth) ? allHealth.slice(-7) : [];
+
+  const labels = last7Health.map(h => new Date(h.created_at).toLocaleDateString([], { weekday: 'short', day: 'numeric' }));
+  const stepsData = last7Health.map(h => h.steps || 0);
+
+  if (stepsChartInstance) stepsChartInstance.destroy();
+
+  stepsChartInstance = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels.length ? labels : ['Hoy'],
+      datasets: [{
+        label: 'Pasos',
+        data: stepsData.length ? stepsData : [0],
+        backgroundColor: '#38bdf8',
+        borderRadius: 8
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        y: { grid: { color: '#1f2a44' }, ticks: { color: '#94a3b8' } },
+        x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
+      },
+      plugins: { legend: { display: false } }
+    }
+  });
 }
 
 function renderStepsChart() {
