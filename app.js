@@ -1438,33 +1438,50 @@ function renderCoachEngine() {
   const daysTotal = userProfile.weeks * 7;
   let dailyDeficit = Math.round(totalDeficitNeeded / daysTotal);
 
-  // --- Algoritmo de Ajuste Metabólico (Fase 3) ---
+  // --- Algoritmo de Ajuste Metabólico PRO (Fase 7: Medias Semanales) ---
   let stagnationModifier = 0;
   let alertMessage = '';
   const validMetrics = (Array.isArray(allBodyMetrics) ? allBodyMetrics : [])
     .filter(item => item.weight_kg)
     .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 
-  if (validMetrics.length >= 2) {
-    const currentWeight = Number(validMetrics[validMetrics.length - 1].weight_kg);
-    const previousWeight = Number(validMetrics[validMetrics.length - 2].weight_kg);
-    if (currentWeight >= previousWeight) {
-      stagnationModifier = 150; 
-      alertMessage = `<div style="background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; padding: 10px; border-radius: 8px; margin-top: 10px; font-size: 0.85rem;"><span style="color: #ef4444; font-weight: bold;">⚠️ Alerta de Estancamiento:</span> Tu peso no ha bajado. Hemos ajustado tu déficit (-150 kcal) para forzar la quema de grasa.</div>`;
-    } else {
-      alertMessage = `<div style="background: rgba(16, 185, 129, 0.15); border: 1px solid #10b981; padding: 10px; border-radius: 8px; margin-top: 10px; font-size: 0.85rem;"><span style="color: #10b981; font-weight: bold;">🔥 Metabolismo Óptimo:</span> Sigues bajando de peso. Mantenemos tu presupuesto calórico estable.</div>`;
+  const dailyWeightMap = {};
+  validMetrics.forEach(entry => {
+    if (entry.created_at) {
+      const d = new Date(entry.created_at);
+      const dayKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      dailyWeightMap[dayKey] = Number(entry.weight_kg);
     }
+  });
+  const sortedDays = Object.keys(dailyWeightMap).sort();
+
+  if (sortedDays.length >= 14) {
+    const last7Days = sortedDays.slice(-7).map(k => dailyWeightMap[k]);
+    const prev7Days = sortedDays.slice(-14, -7).map(k => dailyWeightMap[k]);
+    
+    const currentAvg = last7Days.reduce((a, b) => a + b, 0) / last7Days.length;
+    const prevAvg = prev7Days.reduce((a, b) => a + b, 0) / prev7Days.length;
+
+    if (currentAvg >= prevAvg - 0.1) {
+      stagnationModifier = 150;
+      alertMessage = `<div style="background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; padding: 10px; border-radius: 8px; margin-top: 10px; font-size: 0.85rem;"><span style="color: #ef4444; font-weight: bold;">⚠️ Alerta de Estancamiento (Media Semanal):</span> Tu peso medio no baja. Aplicamos recorte (-150 kcal) para romper la meseta.</div>`;
+    } else {
+      alertMessage = `<div style="background: rgba(16, 185, 129, 0.15); border: 1px solid #10b981; padding: 10px; border-radius: 8px; margin-top: 10px; font-size: 0.85rem;"><span style="color: #10b981; font-weight: bold;">🔥 Metabolismo Óptimo:</span> Tu media semanal sigue bajando. Mantenemos tus macros.</div>`;
+    }
+  } else if (sortedDays.length > 0) {
+    alertMessage = `<div style="background: rgba(56, 189, 248, 0.15); border: 1px solid #38bdf8; padding: 10px; border-radius: 8px; margin-top: 10px; font-size: 0.85rem;"><span style="color: #38bdf8; font-weight: bold;">📊 Recopilando datos:</span> Llevas ${sortedDays.length} días de pesaje. Necesitamos 14 para calcular tu media semanal.</div>`;
   }
+  
   dailyDeficit += stagnationModifier;
 
-  // --- NUEVO: Motor de Recuperación / Readiness (Fase 6) ---
+  // --- Motor de Recuperación / Readiness (Fase 6) ---
   let readinessScore = 100;
   const sleepHours = dailyChecklist.sleep || 0;
   
   if (sleepHours < 7.5 && sleepHours > 0) {
-    readinessScore -= (7.5 - sleepHours) * 12; // Pierde puntos por falta de sueño
+    readinessScore -= (7.5 - sleepHours) * 12;
   } else if (sleepHours === 0) {
-    readinessScore -= 30; // Si no hay datos, asume fatiga parcial por precaución
+    readinessScore -= 30;
   }
 
   const validBpmLogs = (Array.isArray(allHealth) ? allHealth : []).filter(h => h.resting_bpm && Number(h.resting_bpm) > 35);
@@ -1472,9 +1489,7 @@ function renderCoachEngine() {
     const currentBpm = Number(validBpmLogs[validBpmLogs.length - 1].resting_bpm);
     const recentLogs = validBpmLogs.slice(-7);
     const avgBpm = recentLogs.reduce((acc, curr) => acc + Number(curr.resting_bpm), 0) / recentLogs.length;
-    if (currentBpm > avgBpm + 2) {
-      readinessScore -= (currentBpm - avgBpm) * 2.5; // Penaliza si el corazón va acelerado (estrés)
-    }
+    if (currentBpm > avgBpm + 2) readinessScore -= (currentBpm - avgBpm) * 2.5;
   }
 
   readinessScore = Math.max(0, Math.min(100, Math.round(readinessScore)));
@@ -1487,51 +1502,30 @@ function renderCoachEngine() {
   }
 
   let readinessAdvice = '';
-  if (readinessScore < 40) {
-    readinessAdvice = `<p>⚠️ <strong>Fatiga Central Alta:</strong> Tu pulso o falta de sueño indican estrés. Prioriza LISS (cardio) o descanso activo. Nada de buscar Récords hoy.</p>`;
-  } else if (readinessScore < 70) {
-    readinessAdvice = `<p>🔋 <strong>Recuperación Moderada:</strong> Puedes entrenar, pero mantén la intensidad bajo control.</p>`;
-  }
-  // --------------------------------------------------------
+  if (readinessScore < 40) readinessAdvice = `<p>⚠️ <strong>Fatiga Central Alta:</strong> Pulso alterado o falta de sueño. Prioriza LISS o descanso.</p>`;
+  else if (readinessScore < 70) readinessAdvice = `<p>🔋 <strong>Recuperación Moderada:</strong> Puedes entrenar, pero controla la intensidad.</p>`;
 
+  // --- Cálculo Final ---
   const now = new Date();
   const localTodayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
   
-  const todayHealthEntries = (Array.isArray(allHealth) ? allHealth : []).filter(h => {
-    if (!h.created_at) return false;
-    const itemDate = new Date(h.created_at);
-    return `${itemDate.getFullYear()}-${String(itemDate.getMonth() + 1).padStart(2, '0')}-${String(itemDate.getDate()).padStart(2, '0')}` === localTodayStr;
-  });
-
-  const todayWorkouts = (Array.isArray(allWorkouts) ? allWorkouts : []).filter(w => {
-    if (!w.created_at) return false;
-    const itemDate = new Date(w.created_at);
-    return `${itemDate.getFullYear()}-${String(itemDate.getMonth() + 1).padStart(2, '0')}-${String(itemDate.getDate()).padStart(2, '0')}` === localTodayStr;
-  });
+  const todayHealthEntries = (Array.isArray(allHealth) ? allHealth : []).filter(h => h.created_at && h.created_at.startsWith(localTodayStr));
+  const todayWorkouts = (Array.isArray(allWorkouts) ? allWorkouts : []).filter(w => w.created_at && w.created_at.startsWith(localTodayStr));
 
   const todaySteps = todayHealthEntries.reduce((max, h) => Math.max(max, Number(h.steps) || 0), 0);
-  const stepsBurn = Math.round(todaySteps * 0.04);
-  const workoutBurn = todayWorkouts.reduce((acc, w) => acc + (w.active_calories ? Number(w.active_calories) : 250), 0);
-  const totalBurn = stepsBurn + workoutBurn;
+  const totalBurn = Math.round(todaySteps * 0.04) + todayWorkouts.reduce((acc, w) => acc + (w.active_calories ? Number(w.active_calories) : 250), 0);
 
   let finalCalorieTarget;
   let adviceHTML = '';
 
   if (userProfile.hasWatch) {
-    const maintenanceBase = Math.round(bmr * 1.2);
-    finalCalorieTarget = Math.max(1200, maintenanceBase + totalBurn - dailyDeficit);
+    finalCalorieTarget = Math.max(1200, Math.round(bmr * 1.2) + totalBurn - dailyDeficit);
     targetCalEl.innerText = `${finalCalorieTarget} kcal`;
-
-    if (todayWorkouts.length > 0) {
-      adviceHTML = `<p>⚡ <strong>¡Entrenamiento registrado!</strong> Gasto activo: +${totalBurn} kcal. Objetivo: <strong>${finalCalorieTarget} kcal</strong>.</p>`;
-    } else if (todaySteps > 8000) {
-      adviceHTML = `<p>🚶 <strong>Gran volumen de pasos:</strong> (+${stepsBurn} kcal). Objetivo: <strong>${finalCalorieTarget} kcal</strong>.</p>`;
-    } else {
-      adviceHTML = `<p>🎯 <strong>Día de recuperación:</strong> Para cumplir tu meta, consume <strong>${finalCalorieTarget} kcal</strong>.</p>`;
-    }
+    if (todayWorkouts.length > 0) adviceHTML = `<p>⚡ <strong>¡Entrenamiento registrado!</strong> Gasto activo: +${totalBurn} kcal. Objetivo: <strong>${finalCalorieTarget} kcal</strong>.</p>`;
+    else if (todaySteps > 8000) adviceHTML = `<p>🚶 <strong>Gran volumen de pasos:</strong> (+${Math.round(todaySteps * 0.04)} kcal). Objetivo: <strong>${finalCalorieTarget} kcal</strong>.</p>`;
+    else adviceHTML = `<p>🎯 <strong>Día de recuperación:</strong> Para cumplir tu meta, consume <strong>${finalCalorieTarget} kcal</strong>.</p>`;
   } else {
-    const maintenanceBase = Math.round(bmr * 1.35);
-    finalCalorieTarget = Math.max(1200, maintenanceBase + workoutBurn - dailyDeficit);
+    finalCalorieTarget = Math.max(1200, Math.round(bmr * 1.35) + totalBurn - dailyDeficit);
     targetCalEl.innerText = `${finalCalorieTarget} kcal`;
     adviceHTML = `<p>🎯 <strong>Plan Estándar Activo:</strong> Tu objetivo son <strong>${finalCalorieTarget} kcal</strong>.</p>`;
   }
@@ -2059,12 +2053,10 @@ function renderWeightChart() {
   if (!canvas || typeof Chart === 'undefined') return;
   const ctx = canvas.getContext('2d');
 
-  // Filtrar métricas que contengan peso y ordenarlas por fecha
   const validMetrics = (Array.isArray(allBodyMetrics) ? allBodyMetrics : [])
     .filter(item => item.weight_kg)
     .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 
-  // Agrupar por fecha local (se queda con el último peso registrado cada día)
   const dailyWeightMap = {};
   validMetrics.forEach(entry => {
     if (entry.created_at) {
@@ -2075,32 +2067,29 @@ function renderWeightChart() {
   });
 
   const sortedKeys = Object.keys(dailyWeightMap).sort();
-  const recentKeys = sortedKeys.slice(-14); // Analizamos los últimos 14 días
-
+  const recentKeys = sortedKeys.slice(-14);
   const labels = recentKeys.map(k => dailyWeightMap[k].dateObj.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric' }));
   const dataValues = recentKeys.map(k => dailyWeightMap[k].weight);
 
-  // Diagnóstico textual de la tendencia
   const monitorText = document.getElementById('weight-diagnostic-container');
-  if (monitorText && dataValues.length > 1) {
-    const currentWeight = dataValues[dataValues.length - 1];
-    const previousWeight = dataValues[dataValues.length - 2];
-    const diff = (currentWeight - previousWeight).toFixed(1);
-    let diag = '';
+  if (monitorText && sortedKeys.length >= 14) {
+    const last7Days = sortedKeys.slice(-7).map(k => dailyWeightMap[k].weight);
+    const prev7Days = sortedKeys.slice(-14, -7).map(k => dailyWeightMap[k].weight);
+    const currentAvg = last7Days.reduce((a, b) => a + b, 0) / 7;
+    const prevAvg = prev7Days.reduce((a, b) => a + b, 0) / 7;
+    const diff = (currentAvg - prevAvg).toFixed(2);
     
-    if (diff < 0) diag = `<span style="color:#10b981;">Bajando (${diff} kg)</span>. ¡Buen ritmo en el déficit!`;
-    else if (diff > 0) diag = `<span style="color:#ef4444;">Subiendo (+${diff} kg)</span>. Vigila las calorías ocultas.`;
-    else diag = `<span style="color:#f59e0b;">Mantenimiento</span>. Mantén la constancia.`;
+    let diag = '';
+    if (diff <= -0.1) diag = `<span style="color:#10b981;">Bajando (${diff} kg)</span>. Ritmo constante.`;
+    else if (diff > 0.1) diag = `<span style="color:#ef4444;">Subiendo (+${diff} kg)</span>. Cuidado con la ingesta.`;
+    else diag = `<span style="color:#f59e0b;">Estancamiento</span>. Meseta natural.`;
 
-    monitorText.innerHTML = `<p>Último peso registrado: <strong>${currentWeight} kg</strong>.<br>Tendencia reciente: ${diag}</p>`;
-  } else if (monitorText && dataValues.length === 1) {
-    monitorText.innerHTML = `<p>Último peso registrado: <strong>${dataValues[0]} kg</strong>. Necesitamos más días para calcular la tendencia.</p>`;
-  } else if (monitorText) {
-    monitorText.innerHTML = `<p>Aún no hay registros de peso. Utiliza el botón de Registrar.</p>`;
+    monitorText.innerHTML = `<p>Media últimos 7 días: <strong>${currentAvg.toFixed(1)} kg</strong> (Semana anterior: ${prevAvg.toFixed(1)} kg).<br>Tendencia Real: ${diag}</p>`;
+  } else if (monitorText && dataValues.length > 0) {
+    monitorText.innerHTML = `<p>Último peso: <strong>${dataValues[dataValues.length - 1]} kg</strong>. Necesitamos 14 días para mostrar la tendencia semanal.</p>`;
   }
 
   if (window.weightChartInstance) window.weightChartInstance.destroy();
-
   window.weightChartInstance = new Chart(ctx, {
     type: 'line',
     data: {
@@ -2125,10 +2114,7 @@ function renderWeightChart() {
           grid: { color: '#1f2a44' },
           ticks: { color: '#94a3b8' }
         },
-        x: {
-          grid: { display: false },
-          ticks: { color: '#94a3b8' }
-        }
+        x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
       },
       plugins: { legend: { display: false } }
     }
