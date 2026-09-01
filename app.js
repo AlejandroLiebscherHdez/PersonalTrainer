@@ -102,6 +102,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupFoodSearchEngine();
   setupWorkoutChartSelector();
   setupDietSection();
+  setupTrainerChat();
 
   // Control de pestañas
   document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -2274,9 +2275,9 @@ function renderWeightChart() {
 }
 
 // ==========================================
-// ASISTENTE VIRTUAL FLOTANTE (FASE 11)
+// ASISTENTE VIRTUAL FLOTANTE (SEGURO)
 // ==========================================
-document.addEventListener('DOMContentLoaded', () => {
+function setupTrainerChat() {
   const toggleBtn = document.getElementById('btn-toggle-trainer-chat');
   const closeBtn = document.getElementById('btn-close-trainer-chat');
   const chatWindow = document.getElementById('trainer-chat-window');
@@ -2302,12 +2303,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const text = inputEl.value.trim();
     if (!text) return;
 
-    // Mostrar mensaje del usuario
     messagesBox.innerHTML += `<div style="background: #2563eb; color: white; padding: 8px 12px; border-radius: 10px; align-self: flex-end; max-width: 80%;"> ${text}</div>`;
     inputEl.value = '';
     messagesBox.scrollTop = messagesBox.scrollHeight;
 
-    // Generar respuesta analítica del bot basada en tu perfil real
     setTimeout(() => {
       let botReply = "Entendido. Sigue registrando tus datos diarios para afinar las recomendaciones de rendimiento.";
       const query = text.toLowerCase();
@@ -2340,4 +2339,4 @@ document.addEventListener('DOMContentLoaded', () => {
       if (e.key === 'Enter') handleUserMessage();
     });
   }
-});
+}
