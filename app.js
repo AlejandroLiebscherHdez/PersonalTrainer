@@ -19,6 +19,7 @@ let volumeChartInstance = null;
 
 let allLogs = [];
 let allHealth = [];
+let allBodyMetrics = [];
 let allWorkouts = [];
 let allUserRecipes = [];
 
@@ -1375,22 +1376,27 @@ function setupHabitConfig() {
 // ==========================================
 async function loadData() {
   try {
-    const [resLogs, resHealth, resWorkouts] = await Promise.all([
+    const [resLogs, resHealth, resWorkouts, resMetrics] = await Promise.all([
       fetch(`${SUPABASE_URL}/rest/v1/vape_logs?select=*&order=created_at.desc`, { headers: getAuthHeaders() }),
       fetch(`${SUPABASE_URL}/rest/v1/daily_health?select=*&order=created_at.asc`, { headers: getAuthHeaders() }),
-      fetch(`${SUPABASE_URL}/rest/v1/workouts?select=*&order=created_at.desc`, { headers: getAuthHeaders() })
+      fetch(`${SUPABASE_URL}/rest/v1/workouts?select=*&order=created_at.desc`, { headers: getAuthHeaders() }),
+      fetch(`${SUPABASE_URL}/rest/v1/body_metrics?select=*&order=created_at.asc`, { headers: getAuthHeaders() })
     ]);
-
+    
     const dataLogs = await resLogs.json();
     const dataHealth = await resHealth.json();
     const dataWorkouts = await resWorkouts.json();
+    const dataMetrics = await resMetrics.json();
 
     allLogs = Array.isArray(dataLogs) ? dataLogs : [];
     allHealth = Array.isArray(dataHealth) ? dataHealth : [];
     allWorkouts = Array.isArray(dataWorkouts) ? dataWorkouts : [];
+    allBodyMetrics = Array.isArray(dataMetrics) ? dataMetrics : [];
 
     const lastRelapse = allLogs.find(l => l.type === 'recaida');
-    if (lastRelapse) cleanSince = new Date(lastRelapse.created_at).getTime();
+    if (lastRelapse) {
+      cleanSince = new Date(lastRelapse.created_at).getTime();
+    }
 
     if (typeof updateDashboardMetrics === 'function') updateDashboardMetrics();
     if (typeof renderCoachEngine === 'function') renderCoachEngine();
@@ -1398,6 +1404,8 @@ async function loadData() {
     if (typeof renderHealthCharts === 'function') renderHealthCharts();
     if (typeof renderWorkoutsList === 'function') renderWorkoutsList();
     if (typeof renderDiagnostic === 'function') renderDiagnostic();
+    if (typeof renderWeightChart === 'function') renderWeightChart(); // Llama a la nueva gráfica
+
   } catch (err) {
     console.error("Error cargando datos:", err);
   }
@@ -1896,4 +1904,85 @@ function initApp() {
   if (authSession) syncProfileFromCloud();
   loadData();
   setInterval(loadData, 10000);
+}
+
+function renderWeightChart() {
+  const canvas = document.getElementById('weightChart');
+  if (!canvas || typeof Chart === 'undefined') return;
+  const ctx = canvas.getContext('2d');
+
+  // Filtrar métricas que contengan peso y ordenarlas por fecha
+  const validMetrics = (Array.isArray(allBodyMetrics) ? allBodyMetrics : [])
+    .filter(item => item.weight_kg)
+    .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+
+  // Agrupar por fecha local (se queda con el último peso registrado cada día)
+  const dailyWeightMap = {};
+  validMetrics.forEach(entry => {
+    if (entry.created_at) {
+      const d = new Date(entry.created_at);
+      const dayKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      dailyWeightMap[dayKey] = { weight: Number(entry.weight_kg), dateObj: d };
+    }
+  });
+
+  const sortedKeys = Object.keys(dailyWeightMap).sort();
+  const recentKeys = sortedKeys.slice(-14); // Analizamos los últimos 14 días
+
+  const labels = recentKeys.map(k => dailyWeightMap[k].dateObj.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric' }));
+  const dataValues = recentKeys.map(k => dailyWeightMap[k].weight);
+
+  // Diagnóstico textual de la tendencia
+  const monitorText = document.getElementById('weight-diagnostic-container');
+  if (monitorText && dataValues.length > 1) {
+    const currentWeight = dataValues[dataValues.length - 1];
+    const previousWeight = dataValues[dataValues.length - 2];
+    const diff = (currentWeight - previousWeight).toFixed(1);
+    let diag = '';
+    
+    if (diff < 0) diag = `<span style="color:#10b981;">Bajando (${diff} kg)</span>. ¡Buen ritmo en el déficit!`;
+    else if (diff > 0) diag = `<span style="color:#ef4444;">Subiendo (+${diff} kg)</span>. Vigila las calorías ocultas.`;
+    else diag = `<span style="color:#f59e0b;">Mantenimiento</span>. Mantén la constancia.`;
+
+    monitorText.innerHTML = `<p>Último peso registrado: <strong>${currentWeight} kg</strong>.<br>Tendencia reciente: ${diag}</p>`;
+  } else if (monitorText && dataValues.length === 1) {
+    monitorText.innerHTML = `<p>Último peso registrado: <strong>${dataValues[0]} kg</strong>. Necesitamos más días para calcular la tendencia.</p>`;
+  } else if (monitorText) {
+    monitorText.innerHTML = `<p>Aún no hay registros de peso. Utiliza el botón de Registrar.</p>`;
+  }
+
+  if (window.weightChartInstance) window.weightChartInstance.destroy();
+
+  window.weightChartInstance = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels.length ? labels : ['Sin datos'],
+      datasets: [{
+        label: 'Peso Corporal (kg)',
+        data: dataValues.length ? dataValues : [0],
+        borderColor: '#f59e0b',
+        backgroundColor: 'rgba(245, 158, 11, 0.15)',
+        tension: 0.3,
+        fill: true,
+        pointBackgroundColor: '#f59e0b',
+        pointRadius: 5
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        y: {
+          min: dataValues.length ? Math.floor(Math.min(...dataValues) - 2) : 0,
+          max: dataValues.length ? Math.ceil(Math.max(...dataValues) + 2) : 100,
+          grid: { color: '#1f2a44' },
+          ticks: { color: '#94a3b8' }
+        },
+        x: {
+          grid: { display: false },
+          ticks: { color: '#94a3b8' }
+        }
+      },
+      plugins: { legend: { display: false } }
+    }
+  });
 }
