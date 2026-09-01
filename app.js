@@ -106,7 +106,8 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       if (btn.dataset.tab === 'tab-health') {
         if (bpmHealthChartInstance) setTimeout(() => bpmHealthChartInstance.resize(), 100);
-        renderHeartZones(); // <--- ¡Aquí es donde debe ir!
+        renderHealthCharts();
+        renderHeartZones();
       }
       if (btn.dataset.tab === 'tab-diet') {
         renderDietMeals();
@@ -1361,7 +1362,7 @@ async function loadData() {
     if (typeof updateDashboardMetrics === 'function') updateDashboardMetrics();
     if (typeof renderCoachEngine === 'function') renderCoachEngine();
     if (typeof renderStepsChart === 'function') renderStepsChart();
-    if (typeof renderBpmChart === 'function') renderBpmChart();
+    if (typeof renderHealthCharts === 'function') renderHealthCharts();
     if (typeof renderWorkoutsList === 'function') renderWorkoutsList();
     if (typeof renderDiagnostic === 'function') renderDiagnostic();
   } catch (err) {
@@ -1427,10 +1428,9 @@ function renderCoachEngine() {
 function updateDashboardMetrics() {
   const todayDateStr = new Date().toISOString().split('T')[0];
 
-  // 1. Filtrar todas las entradas registradas hoy en daily_health
+  // 1. Filtrar filas registradas hoy por su timestamp created_at
   const todayHealthEntries = (Array.isArray(allHealth) ? allHealth : []).filter(h => {
-    const d = h.date || (h.created_at ? h.created_at.split('T')[0] : '');
-    return d === todayDateStr;
+    return h.created_at && h.created_at.startsWith(todayDateStr);
   });
 
   const todayWorkouts = Array.isArray(allWorkouts)
