@@ -1438,10 +1438,9 @@ function renderCoachEngine() {
   const daysTotal = userProfile.weeks * 7;
   let dailyDeficit = Math.round(totalDeficitNeeded / daysTotal);
 
-  // --- NUEVO: Algoritmo de Ajuste Metabólico ---
+  // --- Algoritmo de Ajuste Metabólico (Fase 3) ---
   let stagnationModifier = 0;
   let alertMessage = '';
-  
   const validMetrics = (Array.isArray(allBodyMetrics) ? allBodyMetrics : [])
     .filter(item => item.weight_kg)
     .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
@@ -1449,45 +1448,68 @@ function renderCoachEngine() {
   if (validMetrics.length >= 2) {
     const currentWeight = Number(validMetrics[validMetrics.length - 1].weight_kg);
     const previousWeight = Number(validMetrics[validMetrics.length - 2].weight_kg);
-    
-    // Si el peso subió o se mantuvo igual respecto al registro anterior
     if (currentWeight >= previousWeight) {
       stagnationModifier = 150; 
-      alertMessage = `<div style="background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; padding: 10px; border-radius: 8px; margin-top: 10px; font-size: 0.85rem;">
-        <span style="color: #ef4444; font-weight: bold;">⚠️ Alerta de Estancamiento:</span> Tu peso no ha bajado. Hemos ajustado tu déficit (-150 kcal) para forzar la quema de grasa.
-      </div>`;
+      alertMessage = `<div style="background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; padding: 10px; border-radius: 8px; margin-top: 10px; font-size: 0.85rem;"><span style="color: #ef4444; font-weight: bold;">⚠️ Alerta de Estancamiento:</span> Tu peso no ha bajado. Hemos ajustado tu déficit (-150 kcal) para forzar la quema de grasa.</div>`;
     } else {
-      alertMessage = `<div style="background: rgba(16, 185, 129, 0.15); border: 1px solid #10b981; padding: 10px; border-radius: 8px; margin-top: 10px; font-size: 0.85rem;">
-        <span style="color: #10b981; font-weight: bold;">🔥 Metabolismo Óptimo:</span> Sigues bajando de peso. Mantenemos tu presupuesto calórico estable.
-      </div>`;
+      alertMessage = `<div style="background: rgba(16, 185, 129, 0.15); border: 1px solid #10b981; padding: 10px; border-radius: 8px; margin-top: 10px; font-size: 0.85rem;"><span style="color: #10b981; font-weight: bold;">🔥 Metabolismo Óptimo:</span> Sigues bajando de peso. Mantenemos tu presupuesto calórico estable.</div>`;
     }
   }
-  
   dailyDeficit += stagnationModifier;
-  // ---------------------------------------------
+
+  // --- NUEVO: Motor de Recuperación / Readiness (Fase 6) ---
+  let readinessScore = 100;
+  const sleepHours = dailyChecklist.sleep || 0;
+  
+  if (sleepHours < 7.5 && sleepHours > 0) {
+    readinessScore -= (7.5 - sleepHours) * 12; // Pierde puntos por falta de sueño
+  } else if (sleepHours === 0) {
+    readinessScore -= 30; // Si no hay datos, asume fatiga parcial por precaución
+  }
+
+  const validBpmLogs = (Array.isArray(allHealth) ? allHealth : []).filter(h => h.resting_bpm && Number(h.resting_bpm) > 35);
+  if (validBpmLogs.length >= 2) {
+    const currentBpm = Number(validBpmLogs[validBpmLogs.length - 1].resting_bpm);
+    const recentLogs = validBpmLogs.slice(-7);
+    const avgBpm = recentLogs.reduce((acc, curr) => acc + Number(curr.resting_bpm), 0) / recentLogs.length;
+    if (currentBpm > avgBpm + 2) {
+      readinessScore -= (currentBpm - avgBpm) * 2.5; // Penaliza si el corazón va acelerado (estrés)
+    }
+  }
+
+  readinessScore = Math.max(0, Math.min(100, Math.round(readinessScore)));
+  const readinessEl = document.getElementById('readiness-score');
+  if (readinessEl) {
+    readinessEl.innerText = `${readinessScore}%`;
+    if (readinessScore >= 70) readinessEl.style.color = '#10b981';
+    else if (readinessScore >= 40) readinessEl.style.color = '#f59e0b';
+    else readinessEl.style.color = '#ef4444';
+  }
+
+  let readinessAdvice = '';
+  if (readinessScore < 40) {
+    readinessAdvice = `<p>⚠️ <strong>Fatiga Central Alta:</strong> Tu pulso o falta de sueño indican estrés. Prioriza LISS (cardio) o descanso activo. Nada de buscar Récords hoy.</p>`;
+  } else if (readinessScore < 70) {
+    readinessAdvice = `<p>🔋 <strong>Recuperación Moderada:</strong> Puedes entrenar, pero mantén la intensidad bajo control.</p>`;
+  }
+  // --------------------------------------------------------
 
   const now = new Date();
   const localTodayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-
+  
   const todayHealthEntries = (Array.isArray(allHealth) ? allHealth : []).filter(h => {
     if (!h.created_at) return false;
     const itemDate = new Date(h.created_at);
-    const itemLocalStr = `${itemDate.getFullYear()}-${String(itemDate.getMonth() + 1).padStart(2, '0')}-${String(itemDate.getDate()).padStart(2, '0')}`;
-    return itemLocalStr === localTodayStr;
+    return `${itemDate.getFullYear()}-${String(itemDate.getMonth() + 1).padStart(2, '0')}-${String(itemDate.getDate()).padStart(2, '0')}` === localTodayStr;
   });
 
   const todayWorkouts = (Array.isArray(allWorkouts) ? allWorkouts : []).filter(w => {
     if (!w.created_at) return false;
     const itemDate = new Date(w.created_at);
-    const itemLocalStr = `${itemDate.getFullYear()}-${String(itemDate.getMonth() + 1).padStart(2, '0')}-${String(itemDate.getDate()).padStart(2, '0')}`;
-    return itemLocalStr === localTodayStr;
+    return `${itemDate.getFullYear()}-${String(itemDate.getMonth() + 1).padStart(2, '0')}-${String(itemDate.getDate()).padStart(2, '0')}` === localTodayStr;
   });
 
-  const todaySteps = todayHealthEntries.reduce((max, h) => {
-    const s = Number(h.steps) || 0;
-    return s > max ? s : max;
-  }, 0);
-
+  const todaySteps = todayHealthEntries.reduce((max, h) => Math.max(max, Number(h.steps) || 0), 0);
   const stepsBurn = Math.round(todaySteps * 0.04);
   const workoutBurn = todayWorkouts.reduce((acc, w) => acc + (w.active_calories ? Number(w.active_calories) : 250), 0);
   const totalBurn = stepsBurn + workoutBurn;
@@ -1497,14 +1519,13 @@ function renderCoachEngine() {
 
   if (userProfile.hasWatch) {
     const maintenanceBase = Math.round(bmr * 1.2);
-    // Añadimos un suelo calórico de 1200 para seguridad de salud
     finalCalorieTarget = Math.max(1200, maintenanceBase + totalBurn - dailyDeficit);
     targetCalEl.innerText = `${finalCalorieTarget} kcal`;
 
     if (todayWorkouts.length > 0) {
-      adviceHTML = `<p>⚡ <strong>¡Entrenamiento registrado!</strong> Gasto activo: +${totalBurn} kcal. Tu objetivo hoy es <strong>${finalCalorieTarget} kcal</strong>.</p>`;
+      adviceHTML = `<p>⚡ <strong>¡Entrenamiento registrado!</strong> Gasto activo: +${totalBurn} kcal. Objetivo: <strong>${finalCalorieTarget} kcal</strong>.</p>`;
     } else if (todaySteps > 8000) {
-      adviceHTML = `<p>🚶 <strong>Gran volumen de pasos:</strong> Llevas ${todaySteps.toLocaleString()} pasos (+${stepsBurn} kcal). Mantente en <strong>${finalCalorieTarget} kcal</strong>.</p>`;
+      adviceHTML = `<p>🚶 <strong>Gran volumen de pasos:</strong> (+${stepsBurn} kcal). Objetivo: <strong>${finalCalorieTarget} kcal</strong>.</p>`;
     } else {
       adviceHTML = `<p>🎯 <strong>Día de recuperación:</strong> Para cumplir tu meta, consume <strong>${finalCalorieTarget} kcal</strong>.</p>`;
     }
@@ -1512,10 +1533,10 @@ function renderCoachEngine() {
     const maintenanceBase = Math.round(bmr * 1.35);
     finalCalorieTarget = Math.max(1200, maintenanceBase + workoutBurn - dailyDeficit);
     targetCalEl.innerText = `${finalCalorieTarget} kcal`;
-    adviceHTML = `<p>🎯 <strong>Plan Estándar Activo:</strong> Tu objetivo son <strong>${finalCalorieTarget} kcal</strong>. Registra tus entrenamientos para ajustar el gasto.</p>`;
+    adviceHTML = `<p>🎯 <strong>Plan Estándar Activo:</strong> Tu objetivo son <strong>${finalCalorieTarget} kcal</strong>.</p>`;
   }
 
-  container.innerHTML = adviceHTML + alertMessage;
+  container.innerHTML = adviceHTML + readinessAdvice + alertMessage;
 }
 
 function updateDashboardMetrics() {
@@ -1843,7 +1864,8 @@ function setupChecklist() {
         dailyChecklist.sleep = val;
         localStorage.setItem(todayKey, JSON.stringify(dailyChecklist));
         updateSleepUI();
-        sleepInput.value = ''; // Limpiar el input tras guardar
+        sleepInput.value = '';
+        renderCoachEngine();
       }
     });
   }

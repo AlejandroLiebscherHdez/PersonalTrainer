@@ -34,21 +34,29 @@
     </nav>
 
     <!-- PESTAÑA 1: MI PLAN & COACH -->
-    <main id="tab-dashboard" class="tab-content active">
-      <section class="card coach-card">
-        <h2>🧠 Coach Nutricional & Metabólico</h2>
-        <div id="coach-advice-container">
-          <p class="insight-text">Calculando balance energético diario...</p>
-        </div>
-        <div class="calories-target-box">
-          <span class="cal-title">Presupuesto Calórico Recomendado Hoy</span>
-          <span id="daily-target-calories" class="cal-number">-- kcal</span>
-          <small id="cal-breakdown-text">TMB + Gasto Entreno & Watch - Déficit de Pérdida</small>
-        </div>
-      </section>
+      <main id="tab-dashboard" class="tab-content active">
+        <section class="card coach-card">
+          <h2>🧠 Coach Nutricional & Metabólico</h2>
+          
+          <div id="coach-advice-container">
+            <p class="insight-text">Calculando balance energético diario...</p>
+          </div>
+          
+          <!-- NUEVO: Medidor de Recuperación -->
+          <div id="readiness-container" style="display: flex; justify-content: space-between; align-items: center; background: #1f2a44; padding: 10px; border-radius: 10px; margin-top: 10px;">
+            <span style="font-size: 0.85rem; font-weight: 600;">🔋 Nivel de Recuperación:</span>
+            <span id="readiness-score" style="font-weight: 800; color: #10b981;">--%</span>
+          </div>
 
-      <section class="card checklist-card">
-        <h2>✅ Checklist Diario de Alto Rendimiento</h2>
+          <div class="calories-target-box">
+            <span class="cal-title">Presupuesto Calórico Recomendado Hoy</span>
+            <span id="daily-target-calories" class="cal-number">-- kcal</span>
+            <small id="cal-breakdown-text">TMB + Gasto Entreno & Watch - Déficit de Pérdida</small>
+          </div>
+        </section>
+
+        <section class="card checklist-card">
+          <h2>✅ Checklist Diario de Alto Rendimiento</h2>
         
         <!-- Bloques Cuantitativos Nuevos -->
         <div style="background: #0b0f19; border: 1px solid var(--card-border); padding: 12px; border-radius: 10px; margin-bottom: 12px;">
@@ -593,6 +601,6 @@
     </div>
   </div>
 
-  <script src="app.js?v=0.9.1"></script>
+  <script src="app.js?v=0.9.2"></script>
 </body>
 </html>
