@@ -2277,7 +2277,7 @@ function renderWeightChart() {
 }
 
 // ==========================================
-// ASISTENTE DE IA REAL (CORREGIDO TOKENS & ACCIONES)
+// ASISTENTE DE IA AGÉNTICO CON REINTENTO AUTOMÁTICO
 // ==========================================
 function setupTrainerChat() {
   const toggleBtn = document.getElementById('btn-toggle-trainer-chat');
@@ -2352,8 +2352,6 @@ function setupTrainerChat() {
         }
       }
 
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${encodeURIComponent(apiKey)}`;
-
       const currentWeight = (typeof userProfile !== 'undefined' && userProfile?.weight) ? userProfile.weight : 80;
       const targetCals = document.getElementById('daily-target-calories')?.innerText || "2000 kcal";
 
@@ -2372,24 +2370,36 @@ REGLAS OBLIGATORIAS:
 - Sumar agua: [ACTION: WATER, Litros]
 - Checklist completo: [ACTION: CHECKLIST]`;
 
-      const apiResponse = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ role: "user", parts: [{ text: systemPrompt + "\n\nPetición: " + text }] }],
-          generationConfig: {
-            maxOutputTokens: 800,
-            temperature: 0.3
+      const requestPayload = {
+        contents: [{ role: "user", parts: [{ text: systemPrompt + "\n\nPetición: " + text }] }],
+        generationConfig: {
+          maxOutputTokens: 800,
+          temperature: 0.3
+        }
+      };
+
+      // Función con reintento automático ante saturación de tráfico
+      const fetchWithRetry = async (retries = 2, delayMs = 1200) => {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${encodeURIComponent(apiKey)}`;
+        for (let i = 0; i <= retries; i++) {
+          const res = await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(requestPayload)
+          });
+          const data = await res.json();
+          if (res.ok) return data;
+
+          const isDemandError = data.error?.message?.toLowerCase().includes('demand') || res.status === 503 || res.status === 429;
+          if (isDemandError && i < retries) {
+            await new Promise(r => setTimeout(r, delayMs * (i + 1)));
+            continue;
           }
-        })
-      });
+          throw new Error(data.error?.message || "Error HTTP " + res.status);
+        }
+      };
 
-      const data = await apiResponse.json();
-
-      if (!apiResponse.ok) {
-        throw new Error(data.error?.message || "Error HTTP " + apiResponse.status);
-      }
-
+      const data = await fetchWithRetry();
       let botReply = data.candidates?.[0]?.content?.parts?.[0]?.text || "Acción completada.";
       document.getElementById(loadingId)?.remove();
 
@@ -2432,7 +2442,7 @@ REGLAS OBLIGATORIAS:
             if (startBtn) startBtn.click();
             protocolSelect.scrollIntoView({ behavior: 'smooth', block: 'center' });
           }
-        }, 150);
+        }, 200);
       }
 
       // 2. Hábitos: Botón SOS Urgencia
@@ -2444,7 +2454,7 @@ REGLAS OBLIGATORIAS:
             sosBtn.click();
             sosBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
           }
-        }, 150);
+        }, 200);
       }
 
       // 3. Hábitos: Registrar recaída
@@ -2512,7 +2522,7 @@ REGLAS OBLIGATORIAS:
               const label = chk.closest('label')?.innerText.toLowerCase() || chk.parentElement?.innerText.toLowerCase() || '';
               if (label.includes(exName)) chk.checked = true;
             });
-          }, 150);
+          }, 200);
         }
       }
 
@@ -2571,7 +2581,6 @@ REGLAS OBLIGATORIAS:
         });
       }
 
-      // Limpiar etiquetas de comando del texto visible
       botReply = botReply.replace(/\[ACTION:.*?\]/g, '').trim();
 
       messagesBox.innerHTML += `<div style="background: #1f2a44; border: 1px solid var(--card-border); padding: 8px 12px; border-radius: 10px; align-self: flex-start; max-width: 80%; color: var(--text-main);">${botReply}</div>`;
