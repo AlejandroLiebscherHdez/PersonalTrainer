@@ -116,12 +116,18 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  // Listener para cambiar entre vista semanal y lecturas de hoy en BPM
+  const bpmViewSelect = document.getElementById('bpm-chart-view-select');
+  if (bpmViewSelect) {
+    bpmViewSelect.addEventListener('change', () => renderHealthCharts());
+  }
+
   setupAuthSystem();
   setupProfileModal();
   setupHabitConfig();
   setupChecklist();
   setupRelaxProtocols();
-  renderHeartZones()
+  renderHeartZones();
   setupRoutineSystem();
   setupSearchEngine();
   setupFoodSearchEngine();
@@ -1534,36 +1540,55 @@ function renderHealthCharts() {
   if (!canvas || typeof Chart === 'undefined') return;
   const ctx = canvas.getContext('2d');
 
+  const viewMode = document.getElementById('bpm-chart-view-select')?.value || 'week';
+  const now = new Date();
+  const localTodayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
   // 1. Filtrar solo filas con resting_bpm válido (> 35)
   const validBpmEntries = (Array.isArray(allHealth) ? allHealth : [])
-    .filter(item => item.resting_bpm && Number(item.resting_bpm) > 35);
+    .filter(item => item.resting_bpm && Number(item.resting_bpm) > 35)
+    .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 
-  // 2. Agrupar por fecha para quedarse con la última lectura de cada día
-  const dailyBpmMap = {};
-  validBpmEntries.forEach(entry => {
-    const dayKey = entry.date || (entry.created_at ? entry.created_at.split('T')[0] : '');
-    if (dayKey) {
-      dailyBpmMap[dayKey] = Number(entry.resting_bpm);
-    }
-  });
+  let labels = [];
+  let dataValues = [];
 
-  // 3. Ordenar fechas y coger los últimos 7 días
-  const sortedDates = Object.keys(dailyBpmMap).sort();
-  const recentDates = sortedDates.slice(-7);
+  if (viewMode === 'today') {
+    // Vista: todas las lecturas de hoy ordenadas por hora
+    const todayEntries = validBpmEntries.filter(entry => {
+      if (!entry.created_at) return false;
+      const d = new Date(entry.created_at);
+      const itemStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      return itemStr === localTodayStr;
+    });
 
-  const labels = recentDates.map(dateStr => {
-    const [year, month, day] = dateStr.split('-');
-    const d = new Date(year, month - 1, day);
-    return d.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric' });
-  });
+    labels = todayEntries.map(e => new Date(e.created_at).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }));
+    dataValues = todayEntries.map(e => Number(e.resting_bpm));
+  } else {
+    // Vista: últimos 7 días agrupados por día
+    const dailyBpmMap = {};
+    validBpmEntries.forEach(entry => {
+      if (entry.created_at) {
+        const d = new Date(entry.created_at);
+        const dayKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        dailyBpmMap[dayKey] = { bpm: Number(entry.resting_bpm), dateObj: d };
+      }
+    });
 
-  const dataValues = recentDates.map(dateStr => dailyBpmMap[dateStr]);
+    const sortedKeys = Object.keys(dailyBpmMap).sort();
+    const recentKeys = sortedKeys.slice(-7);
+    labels = recentKeys.map(k => dailyBpmMap[k].dateObj.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric' }));
+    dataValues = recentKeys.map(k => dailyBpmMap[k].bpm);
+  }
 
-  // Actualizar diagnóstico textual superior
-  const monitorText = document.querySelector('.card p') || document.getElementById('bpm-diagnostic-container');
-  if (monitorText && dataValues.length > 0) {
-    const lastBpm = dataValues[dataValues.length - 1];
-    monitorText.innerHTML = `Último pulso basal: <strong>${lastBpm} BPM</strong>. Sistema cardiovascular en rango óptimo.`;
+  // Corregir texto del diagnóstico
+  const monitorText = document.getElementById('bpm-diagnostic-container');
+  if (monitorText && validBpmEntries.length > 0) {
+    const lastBpm = Number(validBpmEntries[validBpmEntries.length - 1].resting_bpm);
+    let diag = 'Alta eficiencia cardiovascular.';
+    if (lastBpm > 60 && lastBpm <= 75) diag = 'Tu corazón recupera adecuadamente.';
+    else if (lastBpm > 75) diag = 'Fatiga o estrés. Hidrátate y descansa.';
+
+    monitorText.innerHTML = `<p>Último pulso basal: <strong>${lastBpm} BPM</strong>.<br><br><span style="color:#10b981;">●</span> <strong>Rango actual:</strong> ${diag}</p>`;
   }
 
   if (window.bpmChartInstance) window.bpmChartInstance.destroy();
@@ -1586,20 +1611,10 @@ function renderHealthCharts() {
     options: {
       responsive: true,
       scales: {
-        y: {
-          min: 40,
-          max: 110,
-          grid: { color: '#1f2a44' },
-          ticks: { color: '#94a3b8' }
-        },
-        x: {
-          grid: { display: false },
-          ticks: { color: '#94a3b8' }
-        }
+        y: { min: 40, max: 110, grid: { color: '#1f2a44' }, ticks: { color: '#94a3b8' } },
+        x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
       },
-      plugins: {
-        legend: { display: false }
-      }
+      plugins: { legend: { display: false } }
     }
   });
 }

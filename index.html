@@ -271,7 +271,13 @@
       </section>
 
       <section class="card chart-card">
-        <h2>Evolución Frecuencia en Reposo (BPM)</h2>
+        <div class="section-header-flex">
+          <h2>Evolución Frecuencia en Reposo (BPM)</h2>
+          <select id="bpm-chart-view-select" class="select-sm">
+            <option value="week" selected>Últimos 7 días</option>
+            <option value="today">Lecturas de Hoy</option>
+          </select>
+        </div>
         <canvas id="restingBpmChart"></canvas>
       </section>
 
