@@ -135,6 +135,20 @@
           </div>
         </div>
 
+        <!-- Panel de Recomendaciones de Acción -->
+        <div id="nutrition-smart-advice" style="margin-top: 14px; padding: 12px; border-radius: 10px; background: rgba(56, 189, 248, 0.08); border: 1px dashed #38bdf8; font-size: 0.85rem; line-height: 1.5; display: flex; flex-direction: column; gap: 8px;">
+          Cargando recomendaciones estratégicas...
+        </div>
+
+        <!-- NUEVO: Gráfica visual de Macros (Doughnut) -->
+        <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--card-border);">
+          <h3 style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 10px; text-align: center; text-transform: uppercase;">Distribución Calórica de Macros</h3>
+          <div style="max-width: 220px; margin: 0 auto;">
+            <canvas id="macroDoughnutChart"></canvas>
+          </div>
+        </div>
+      </section>
+
         <div id="nutrition-smart-advice" style="margin-top: 14px; padding: 12px; border-radius: 10px; background: rgba(56, 189, 248, 0.08); border: 1px dashed #38bdf8; font-size: 0.85rem; line-height: 1.5; display: flex; flex-direction: column; gap: 8px;">
           Cargando recomendaciones estratégicas...
         </div>
@@ -611,6 +625,6 @@
     </div>
   </div>
 
-  <script src="app.js?v=0.9.6"></script>
+  <script src="app.js?v=0.9.7"></script>
 </body>
 </html>

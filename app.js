@@ -626,6 +626,7 @@ function renderDietMeals() {
   const targetCalText = document.getElementById('daily-target-calories').innerText;
   const totalCal = parseInt(targetCalText) || 2200;
   const macros = calculateMacros(totalCal);
+  renderMacroDoughnutChart(macros);
 
   document.getElementById('macro-protein').innerText = `${macros.proteinGrams} g`;
   document.getElementById('macro-protein-kcal').innerText = `${macros.proteinKcal} kcal`;
@@ -1069,6 +1070,41 @@ function renderVolumeChart() {
         x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
       },
       plugins: { legend: { display: true, labels: { color: '#94a3b8', boxWidth: 12 } } }
+    }
+  });
+}
+
+let macroChartInstance = null;
+
+function renderMacroDoughnutChart(macros) {
+  const canvas = document.getElementById('macroDoughnutChart');
+  if (!canvas || typeof Chart === 'undefined') return;
+  const ctx = canvas.getContext('2d');
+
+  const pKcal = macros.proteinKcal || 0;
+  const cKcal = macros.carbsKcal || 0;
+  const fKcal = macros.fatsKcal || 0;
+
+  if (macroChartInstance) macroChartInstance.destroy();
+
+  macroChartInstance = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: ['Proteínas', 'Carbohidratos', 'Grasas'],
+      datasets: [{
+        data: [pKcal, cKcal, fKcal],
+        backgroundColor: ['#38bdf8', '#f59e0b', '#10b981'],
+        borderWidth: 0
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { color: '#94a3b8', boxWidth: 10, font: { size: 11 } }
+        }
+      }
     }
   });
 }
