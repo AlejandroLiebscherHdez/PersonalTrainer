@@ -1,5 +1,5 @@
 const SUPABASE_URL = "https://fckhkuamvuhgsbofncjh.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZja2hrdWFtdnVoZ3Nib2ZuY2poIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgxOTk2OTUsImV4cCI6MjEwMzc3NTY5NX0.FAwiXp4vqfsqPrTTmxtx4oISz-A_bAoJkLVOicajJVY";
+const SUPABASE_KEY = "sb_publishable_yioP3kIKXyRowVXpvPUpMw_GNQotMVy";
 
 let authSession = JSON.parse(localStorage.getItem('supabase_auth_session')) || null;
 
@@ -1383,7 +1383,18 @@ function renderCoachEngine() {
   const todayHealth = allHealth.find(h => h.created_at.startsWith(todayDateStr));
   const todayWorkouts = allWorkouts.filter(w => w.created_at.startsWith(todayDateStr));
 
-  const todaySteps = todayHealth && todayHealth.steps ? Number(todayHealth.steps) : 0;
+  // 1. Filtrar todas las entradas registradas hoy en daily_health
+  const todayHealthEntries = (Array.isArray(allHealth) ? allHealth : []).filter(h => {
+    const d = h.date || (h.created_at ? h.created_at.split('T')[0] : '');
+    return d === todayDateStr;
+  });
+
+  // 2. Extraer el valor más alto registrado hoy
+  const todaySteps = todayHealthEntries.reduce((max, h) => {
+    const s = Number(h.steps) || 0;
+    return s > max ? s : max;
+  }, 0);
+
   const stepsBurn = Math.round(todaySteps * 0.04);
   const workoutBurn = todayWorkouts.reduce((acc, w) => acc + (w.active_calories ? Number(w.active_calories) : 250), 0);
   const totalBurn = stepsBurn + workoutBurn;
@@ -1415,27 +1426,39 @@ function renderCoachEngine() {
 
 function updateDashboardMetrics() {
   const todayDateStr = new Date().toISOString().split('T')[0];
-  
-  // Buscar el registro de salud de hoy (puede venir de Apple Health / Atajos)
-  const todayHealth = Array.isArray(allHealth) ? allHealth.find(h => h.created_at && h.created_at.startsWith(todayDateStr)) : null;
-  const todayWorkouts = Array.isArray(allWorkouts) ? allWorkouts.filter(w => w.created_at && w.created_at.startsWith(todayDateStr)) : [];
 
-  // Extraer los pasos reales de la base de datos
+  // 1. Filtrar todas las entradas registradas hoy en daily_health
+  const todayHealthEntries = (Array.isArray(allHealth) ? allHealth : []).filter(h => {
+    const d = h.date || (h.created_at ? h.created_at.split('T')[0] : '');
+    return d === todayDateStr;
+  });
+
+  const todayWorkouts = Array.isArray(allWorkouts)
+    ? allWorkouts.filter(w => w.created_at && w.created_at.startsWith(todayDateStr))
+    : [];
+
+  // 2. Extraer el valor más alto de pasos registrado hoy
   const stepsEl = document.getElementById('metric-today-steps');
   if (stepsEl) {
-    const rawSteps = todayHealth && todayHealth.steps ? Number(todayHealth.steps) : 0;
-    stepsEl.innerText = rawSteps.toLocaleString();
+    const maxStepsToday = todayHealthEntries.reduce((max, entry) => {
+      const s = Number(entry.steps) || 0;
+      return s > max ? s : max;
+    }, 0);
+    stepsEl.innerText = maxStepsToday.toLocaleString();
   }
 
+  // 3. Gasto de entrenamientos
   const burnEl = document.getElementById('metric-today-burn');
   if (burnEl) {
     const totalWkBurn = todayWorkouts.reduce((acc, w) => acc + (w.active_calories ? Number(w.active_calories) : 250), 0);
     burnEl.innerText = `${totalWkBurn} kcal`;
   }
 
+  // 4. Extraer el último pulso en reposo válido (> 35 bpm)
   const bpmEl = document.getElementById('metric-resting-bpm');
   if (bpmEl && Array.isArray(allHealth) && allHealth.length > 0) {
-    const lastHealthWithBpm = [...allHealth].reverse().find(h => h.resting_bpm);
+    const validBpmLogs = allHealth.filter(h => h.resting_bpm && Number(h.resting_bpm) > 35);
+    const lastHealthWithBpm = validBpmLogs.length > 0 ? validBpmLogs[validBpmLogs.length - 1] : null;
     bpmEl.innerText = lastHealthWithBpm ? `${lastHealthWithBpm.resting_bpm} bpm` : '-- bpm';
   }
 
@@ -1509,29 +1532,38 @@ function renderStepsChart() {
 function renderHealthCharts() {
   const canvas = document.getElementById('restingBpmChart');
   if (!canvas || typeof Chart === 'undefined') return;
-
   const ctx = canvas.getContext('2d');
 
-  // Filtrar registros válidos que contengan resting_bpm de daily_health o de logs
+  // 1. Filtrar solo filas con resting_bpm válido (> 35)
   const validBpmEntries = (Array.isArray(allHealth) ? allHealth : [])
-    .filter(item => item.resting_bpm && Number(item.resting_bpm) > 0)
-    .sort((a, b) => new Date(a.created_at || a.date) - new Date(b.created_at || b.date));
+    .filter(item => item.resting_bpm && Number(item.resting_bpm) > 35);
 
-  // Extraer los últimos 7 días con datos
-  const recentEntries = validBpmEntries.slice(-7);
-
-  const labels = recentEntries.map(entry => {
-    const d = new Date(entry.created_at || entry.date);
-    return d.toLocaleDateString([], { weekday: 'short', day: 'numeric' });
+  // 2. Agrupar por fecha para quedarse con la última lectura de cada día
+  const dailyBpmMap = {};
+  validBpmEntries.forEach(entry => {
+    const dayKey = entry.date || (entry.created_at ? entry.created_at.split('T')[0] : '');
+    if (dayKey) {
+      dailyBpmMap[dayKey] = Number(entry.resting_bpm);
+    }
   });
 
-  const dataValues = recentEntries.map(entry => Number(entry.resting_bpm));
+  // 3. Ordenar fechas y coger los últimos 7 días
+  const sortedDates = Object.keys(dailyBpmMap).sort();
+  const recentDates = sortedDates.slice(-7);
+
+  const labels = recentDates.map(dateStr => {
+    const [year, month, day] = dateStr.split('-');
+    const d = new Date(year, month - 1, day);
+    return d.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric' });
+  });
+
+  const dataValues = recentDates.map(dateStr => dailyBpmMap[dateStr]);
 
   // Actualizar diagnóstico textual superior
-  const monitorText = document.querySelector('.card p');
+  const monitorText = document.querySelector('.card p') || document.getElementById('bpm-diagnostic-container');
   if (monitorText && dataValues.length > 0) {
     const lastBpm = dataValues[dataValues.length - 1];
-    monitorText.innerText = `Última lectura: ${lastBpm} BPM. Sistema cardiovascular en rango óptimo.`;
+    monitorText.innerHTML = `Último pulso basal: <strong>${lastBpm} BPM</strong>. Sistema cardiovascular en rango óptimo.`;
   }
 
   if (window.bpmChartInstance) window.bpmChartInstance.destroy();
@@ -1554,19 +1586,19 @@ function renderHealthCharts() {
     options: {
       responsive: true,
       scales: {
-        y: { 
-          min: 40, 
-          max: 110, 
-          grid: { color: '#1f2a44' }, 
-          ticks: { color: '#94a3b8' } 
+        y: {
+          min: 40,
+          max: 110,
+          grid: { color: '#1f2a44' },
+          ticks: { color: '#94a3b8' }
         },
-        x: { 
-          grid: { display: false }, 
-          ticks: { color: '#94a3b8' } 
+        x: {
+          grid: { display: false },
+          ticks: { color: '#94a3b8' }
         }
       },
-      plugins: { 
-        legend: { display: false } 
+      plugins: {
+        legend: { display: false }
       }
     }
   });
