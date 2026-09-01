@@ -2277,7 +2277,7 @@ function renderWeightChart() {
 }
 
 // ==========================================
-// ASISTENTE DE IA REAL CON GEMINI API (AUTO-FALLBACK)
+// ASISTENTE DE IA CON AUTODETECCIÓN DE MODELO
 // ==========================================
 function setupTrainerChat() {
   const toggleBtn = document.getElementById('btn-toggle-trainer-chat');
@@ -2336,6 +2336,26 @@ function setupTrainerChat() {
         }
       }
 
+      // 1. Detectar automáticamente qué modelos admite la clave
+      let activeModel = localStorage.getItem('gemini_active_model');
+      if (!activeModel) {
+        const listRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(apiKey)}`);
+        const listData = await listRes.json();
+        
+        if (listData.models && listData.models.length > 0) {
+          // Buscar primero cualquier variante de 'flash', si no, el primero compatible con generateContent
+          const usable = listData.models.find(m => m.name.includes('flash') && m.supportedGenerationMethods?.includes('generateContent')) 
+                      || listData.models.find(m => m.supportedGenerationMethods?.includes('generateContent'));
+          if (usable) {
+            activeModel = usable.name; // Ej: "models/gemini-2.0-flash" o "models/gemini-1.5-flash-001"
+            localStorage.setItem('gemini_active_model', activeModel);
+          }
+        }
+      }
+
+      const modelPath = activeModel || 'models/gemini-2.0-flash';
+      const url = `https://generativelanguage.googleapis.com/v1beta/${modelPath}:generateContent?key=${encodeURIComponent(apiKey)}`;
+
       const currentWeight = userProfile ? userProfile.weight : 80;
       const targetCals = document.getElementById('daily-target-calories')?.innerText || "2000 kcal";
 
@@ -2347,46 +2367,36 @@ Responde con cercanía, rigor y motivación en español. Si el usuario te pide e
 - [ACTION: CHECKLIST]
 - [ACTION: INGREDIENT]`;
 
-      // Lista de modelos a probar por orden de preferencia
-      const candidateModels = ['gemini-2.0-flash', 'gemini-2.5-flash', 'gemini-1.5-flash'];
-      let data = null;
-      let lastError = null;
+      const apiResponse = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [
+            {
+              role: "user",
+              parts: [{ text: systemPrompt + "\n\nPetición: " + text }]
+            }
+          ]
+        })
+      });
 
-      for (const model of candidateModels) {
-        try {
-          const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
-          const res = await fetch(url, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              contents: [
-                { role: "user", parts: [{ text: systemPrompt + "\n\nPetición: " + text }] }
-              ]
-            })
-          });
+      const data = await apiResponse.json();
 
-          const json = await res.json();
-          if (res.ok && json.candidates?.[0]?.content?.parts?.[0]?.text) {
-            data = json;
-            break; // Conexión exitosa, salimos del bucle
-          } else {
-            lastError = json.error?.message || `Error en modelo ${model}`;
-          }
-        } catch (e) {
-          lastError = e.message;
-        }
+      if (!apiResponse.ok) {
+        console.error("Error devuelto por Gemini:", data);
+        // Si el modelo falló, limpiar caché de modelo para forzar nueva detección
+        localStorage.removeItem('gemini_active_model');
+        throw new Error(data.error?.message || "Error HTTP " + apiResponse.status);
       }
 
-      if (!data) {
-        throw new Error(lastError || "No se pudo conectar con ningún modelo de Gemini.");
+      let botReply = "No he podido procesar la respuesta.";
+      if (data.candidates && data.candidates[0]?.content?.parts?.[0]?.text) {
+        botReply = data.candidates[0].content.parts[0].text;
       }
-
-      const botReplyRaw = data.candidates[0].content.parts[0].text;
-      let botReply = botReplyRaw;
 
       document.getElementById(loadingId)?.remove();
 
-      // Intérprete de acciones del Agente
+      // Intérprete de acciones
       const todayKey = 'dailyChecklist_' + new Date().toISOString().split('T')[0];
 
       if (botReply.includes('[ACTION: SLEEP')) {
