@@ -85,17 +85,27 @@ const ALTERNATIVES_POOL = {
 };
 
 // ==========================================
-// INICIALIZACIÓN GENERAL
+// INICIALIZACIÓN GENERAL (Orden de arranque)
 // ==========================================
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   initUnifiedRecipeSystem();
-  setupCheckinModal();
+  setupAuthSystem();
+  setupProfileModal();
+  setupHabitConfig();
+  setupChecklist();
+  setupRelaxProtocols();
+  renderHeartZones();
+  setupRoutineSystem();
+  setupSearchEngine();
+  setupFoodSearchEngine();
+  setupWorkoutChartSelector();
+  setupDietSection();
 
+  // Control de pestañas
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
       document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-
       btn.classList.add('active');
       const target = document.getElementById(btn.dataset.tab);
       if (target) target.classList.add('active');
@@ -116,24 +126,21 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Listener para cambiar entre vista semanal y lecturas de hoy en BPM
   const bpmViewSelect = document.getElementById('bpm-chart-view-select');
   if (bpmViewSelect) {
     bpmViewSelect.addEventListener('change', () => renderHealthCharts());
   }
 
-  setupAuthSystem();
-  setupProfileModal();
-  setupHabitConfig();
-  setupChecklist();
-  setupRelaxProtocols();
-  renderHeartZones();
-  setupRoutineSystem();
-  setupSearchEngine();
-  setupFoodSearchEngine();
-  setupWorkoutChartSelector();
-  setupDietSection();
-  checkWeighReminder();
+  // Comprobar sesión antes de mostrar cualquier modal
+  if (!authSession) {
+    const authModal = document.getElementById('auth-modal');
+    if (authModal) authModal.classList.add('open');
+  } else {
+    await syncProfileFromCloud();
+    setupCheckinModal();
+    checkWeighReminder();
+  }
+
   initApp();
 });
 
@@ -447,74 +454,103 @@ function setupAuthSystem() {
   const btnSignIn = document.getElementById('btn-auth-signin');
   const btnSignUp = document.getElementById('btn-auth-signup');
   const btnLogout = document.getElementById('btn-auth-logout');
+  const btnSkipAuth = document.getElementById('btn-skip-auth');
 
-  if (!btnOpen) return;
-
-  btnOpen.addEventListener('click', () => {
-    if (authSession) {
-      document.getElementById('auth-modal-title').innerText = `Sesión: ${authSession.user.email}`;
-      btnSignIn.style.display = 'none';
-      btnSignUp.style.display = 'none';
-      btnLogout.style.display = 'block';
-    } else {
-      document.getElementById('auth-modal-title').innerText = "Iniciar Sesión / Registro";
-      btnSignIn.style.display = 'inline-block';
-      btnSignUp.style.display = 'inline-block';
-      btnLogout.style.display = 'none';
-    }
-    modal.classList.add('open');
-  });
-
-  btnClose.addEventListener('click', () => modal.classList.remove('open'));
-
-  btnSignIn.addEventListener('click', async () => {
-    const email = document.getElementById('auth-email').value;
-    const password = document.getElementById('auth-password').value;
-    if (!email || !password) return alert('Introduce email y contraseña');
-
-    const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
-      method: "POST",
-      headers: { "apikey": SUPABASE_KEY, "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password })
+  if (btnOpen) {
+    btnOpen.addEventListener('click', () => {
+      if (authSession && authSession.user) {
+        document.getElementById('auth-modal-title').innerText = `Sesión: ${authSession.user.email}`;
+        btnSignIn.style.display = 'none';
+        btnSignUp.style.display = 'none';
+        if (btnSkipAuth) btnSkipAuth.style.display = 'none';
+        btnLogout.style.display = 'block';
+        if (btnClose) btnClose.style.display = 'block';
+      } else {
+        document.getElementById('auth-modal-title').innerText = "Iniciar Sesión / Registro";
+        btnSignIn.style.display = 'inline-block';
+        btnSignUp.style.display = 'inline-block';
+        if (btnSkipAuth) btnSkipAuth.style.display = 'block';
+        btnLogout.style.display = 'none';
+        if (btnClose) btnClose.style.display = 'block';
+      }
+      modal.classList.add('open');
     });
-    const data = await res.json();
-    if (data.access_token) {
-      authSession = data;
-      localStorage.setItem('supabase_auth_session', JSON.stringify(authSession));
+  }
+
+  if (btnClose) {
+    btnClose.addEventListener('click', () => modal.classList.remove('open'));
+  }
+
+  if (btnSkipAuth) {
+    btnSkipAuth.addEventListener('click', () => {
       modal.classList.remove('open');
-      alert('¡Sesión iniciada con éxito!');
-      await syncProfileFromCloud();
-      loadData();
-    } else {
-      alert(`Error al iniciar sesión: ${data.error_description || data.msg || 'Credenciales incorrectas'}`);
-    }
-  });
-
-  btnSignUp.addEventListener('click', async () => {
-    const email = document.getElementById('auth-email').value;
-    const password = document.getElementById('auth-password').value;
-    if (!email || !password) return alert('Introduce email y contraseña');
-
-    const res = await fetch(`${SUPABASE_URL}/auth/v1/signup`, {
-      method: "POST",
-      headers: { "apikey": SUPABASE_KEY, "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password })
+      // Al omitir login, se ejecutan las verificaciones normales de perfil o pesaje
+      if (!userProfile) {
+        const profModal = document.getElementById('profile-modal');
+        if (profModal) profModal.classList.add('open');
+      } else {
+        setupCheckinModal();
+        checkWeighReminder();
+      }
     });
-    const data = await res.json();
-    if (data.id || data.user) {
-      alert('¡Cuenta creada correctamente! Ya puedes iniciar sesión con tus datos.');
-    } else {
-      alert(`Error al registrar: ${data.error_description || data.msg || 'No se pudo crear'}`);
-    }
-  });
+  }
 
-  btnLogout.addEventListener('click', () => {
-    authSession = null;
-    localStorage.removeItem('supabase_auth_session');
-    modal.classList.remove('open');
-    alert('Has cerrado sesión.');
-    location.reload();
-  });
+  if (btnSignIn) {
+    btnSignIn.addEventListener('click', async () => {
+      const email = document.getElementById('auth-email').value;
+      const password = document.getElementById('auth-password').value;
+      if (!email || !password) return alert('Introduce email y contraseña');
+
+      const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+        method: "POST",
+        headers: { "apikey": SUPABASE_KEY, "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password })
+      });
+      const data = await res.json();
+      if (data.access_token) {
+        authSession = data;
+        localStorage.setItem('supabase_auth_session', JSON.stringify(authSession));
+        modal.classList.remove('open');
+        alert('¡Sesión iniciada con éxito!');
+        // Descargar perfil oficial de la nube antes de cualquier modal
+        await syncProfileFromCloud();
+        loadData();
+        setupCheckinModal();
+      } else {
+        alert(`Error al iniciar sesión: ${data.error_description || data.msg || 'Credenciales incorrectas'}`);
+      }
+    });
+  }
+
+  if (btnSignUp) {
+    btnSignUp.addEventListener('click', async () => {
+      const email = document.getElementById('auth-email').value;
+      const password = document.getElementById('auth-password').value;
+      if (!email || !password) return alert('Introduce email y contraseña');
+
+      const res = await fetch(`${SUPABASE_URL}/auth/v1/signup`, {
+        method: "POST",
+        headers: { "apikey": SUPABASE_KEY, "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password })
+      });
+      const data = await res.json();
+      if (data.id || data.user) {
+        alert('¡Cuenta creada correctamente! Ya puedes iniciar sesión con tus datos.');
+      } else {
+        alert(`Error al registrar: ${data.error_description || data.msg || 'No se pudo crear'}`);
+      }
+    });
+  }
+
+  if (btnLogout) {
+    btnLogout.addEventListener('click', () => {
+      authSession = null;
+      localStorage.removeItem('supabase_auth_session');
+      modal.classList.remove('open');
+      alert('Has cerrado sesión.');
+      location.reload();
+    });
+  }
 }
 
 // ==========================================
@@ -1072,6 +1108,9 @@ function checkWeighReminder() {
   }
 }
 
+// ==========================================
+// CONFIGURACIÓN DEL PERFIL (No sobreescribe)
+// ==========================================
 function setupProfileModal() {
   const modal = document.getElementById('profile-modal');
   const btnOpen = document.getElementById('btn-open-profile');
@@ -1084,22 +1123,19 @@ function setupProfileModal() {
   const preview = document.getElementById('preview-plan');
 
   function updatePlanPreview() {
+    if (!inLoss || !inWeeks || !valLoss || !valWeeks) return;
     valLoss.innerText = inLoss.value;
     valWeeks.innerText = inWeeks.value;
     const kg = Number(inLoss.value);
     const w = Number(inWeeks.value);
     const weeklyRate = (kg / w).toFixed(2);
     const dailyDeficit = Math.round((kg * 7700) / (w * 7));
-
-    let safety = "🟢 Ritmo óptimo y sostenible";
-    if (weeklyRate > 1.0) safety = "🔴 Déficit agresivo";
-    else if (weeklyRate > 0.7) safety = "🟡 Ritmo moderado";
-
-    preview.innerHTML = `
-      <strong>Meta:</strong> Bajar ${kg} kg en ${w} semanas (${weeklyRate} kg/sem).<br>
-      <strong>Déficit calórico diario:</strong> ${dailyDeficit} kcal/día.<br>
-      <small>${safety}</small>
-    `;
+    let safety = "Ritmo óptimo y sostenible";
+    if (weeklyRate > 1.0) safety = "Déficit agresivo";
+    else if (weeklyRate > 0.7) safety = "Ritmo moderado";
+    if (preview) {
+      preview.innerHTML = `<strong>Meta:</strong> Bajar ${kg} kg en ${w} semanas (${weeklyRate} kg/sem).<br><strong>Déficit calórico diario:</strong> ${dailyDeficit} kcal/día.<br><small>${safety}</small>`;
+    }
   }
 
   if (inLoss && inWeeks) {
@@ -1107,29 +1143,20 @@ function setupProfileModal() {
     inWeeks.addEventListener('input', updatePlanPreview);
   }
 
-  if (!userProfile) {
-    userProfile = {
-      name: "Alejandro", age: 24, height: 178, weight: 80.0,
-      targetLossKg: 4, weeks: 8, hasWatch: true, weighFreq: "3days",
-      habitType: "bombo", customDailyCost: 1.70, workoutFocus: "fullbody",
-      workoutDays: 4, dietPreference: "balanceada"
-    };
-    modal.classList.add('open');
-    if (btnClose) btnClose.style.display = 'none';
-  }
-
   if (btnOpen) {
     btnOpen.addEventListener('click', () => {
-      document.getElementById('prof-name').value = userProfile.name;
-      document.getElementById('prof-age').value = userProfile.age;
-      document.getElementById('prof-height').value = userProfile.height;
-      document.getElementById('prof-weight').value = userProfile.weight;
-      const watchSelect = document.getElementById('prof-has-watch');
-      if (watchSelect) watchSelect.value = String(userProfile.hasWatch !== false);
-      document.getElementById('prof-weigh-freq').value = userProfile.weighFreq || '3days';
-      inLoss.value = userProfile.targetLossKg;
-      inWeeks.value = userProfile.weeks;
-      updatePlanPreview();
+      if (userProfile) {
+        document.getElementById('prof-name').value = userProfile.name || '';
+        document.getElementById('prof-age').value = userProfile.age || 24;
+        document.getElementById('prof-height').value = userProfile.height || 178;
+        document.getElementById('prof-weight').value = userProfile.weight || 80;
+        const watchSelect = document.getElementById('prof-has-watch');
+        if (watchSelect) watchSelect.value = String(userProfile.hasWatch !== false);
+        document.getElementById('prof-weigh-freq').value = userProfile.weighFreq || '3days';
+        inLoss.value = userProfile.targetLossKg || 4;
+        inWeeks.value = userProfile.weeks || 8;
+        updatePlanPreview();
+      }
       if (btnClose) btnClose.style.display = 'block';
       modal.classList.add('open');
     });

@@ -410,28 +410,29 @@
   </div>
 
   <!-- MODAL DE AUTENTICACIÓN -->
-  <div id="auth-modal" class="modal-overlay">
-    <div class="modal-card">
-      <h2 id="auth-modal-title">Iniciar Sesión / Registro</h2>
-      <p class="modal-sub">Accede a tus datos en cualquier dispositivo o compártelo con un amigo.</p>
-      <form id="auth-form" autocomplete="off">
-        <div class="form-group">
-          <label for="auth-email">Correo Electrónico:</label>
-          <input type="email" id="auth-email" required placeholder="tu@email.com">
-        </div>
-        <div class="form-group">
-          <label for="auth-password">Contraseña:</label>
-          <input type="password" id="auth-password" required placeholder="••••••••">
-        </div>
-        <div class="modal-actions" style="margin-top: 12px;">
-          <button type="button" id="btn-auth-signin" class="btn-primary">Iniciar Sesión</button>
-          <button type="button" id="btn-auth-signup" class="btn-secondary">Crear Cuenta</button>
-        </div>
-        <button type="button" id="btn-auth-logout" class="btn-secondary" style="margin-top: 10px; width: 100%; display: none; color: #ef4444;">Cerrar Sesión</button>
-        <button type="button" id="btn-close-auth" class="btn-secondary" style="margin-top: 8px; width: 100%;">Cerrar</button>
-      </form>
-    </div>
+<div id="auth-modal" class="modal-overlay">
+  <div class="modal-card">
+    <h2 id="auth-modal-title">Iniciar Sesión / Registro</h2>
+    <p class="modal-sub">Accede a tus datos en cualquier dispositivo o mantén tu perfil sincronizado.</p>
+    <form id="auth-form" autocomplete="off">
+      <div class="form-group">
+        <label for="auth-email">Correo Electrónico:</label>
+        <input type="email" id="auth-email" required placeholder="tu@email.com">
+      </div>
+      <div class="form-group">
+        <label for="auth-password">Contraseña:</label>
+        <input type="password" id="auth-password" required placeholder="••••••••">
+      </div>
+      <div class="modal-actions" style="margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap;">
+        <button type="button" id="btn-auth-signin" class="btn-primary" style="flex: 1;">Iniciar Sesión</button>
+        <button type="button" id="btn-auth-signup" class="btn-secondary" style="flex: 1;">Crear Cuenta</button>
+      </div>
+      <button type="button" id="btn-skip-auth" class="btn-secondary" style="margin-top: 10px; width: 100%; border: 1px dashed var(--card-border);">Continuar como invitado →</button>
+      <button type="button" id="btn-auth-logout" class="btn-secondary" style="margin-top: 10px; width: 100%; display: none; color: #ef4444;">Cerrar Sesión</button>
+      <button type="button" id="btn-close-auth" class="btn-secondary" style="margin-top: 8px; width: 100%; display: none;">Cerrar</button>
+    </form>
   </div>
+</div>
 
   <!-- MODAL DE CONFIGURACIÓN DEL PERFIL -->
   <div id="profile-modal" class="modal-overlay">
