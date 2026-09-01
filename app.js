@@ -2325,7 +2325,7 @@ function setupTrainerChat() {
     try {
       let apiKey = localStorage.getItem('gemini_api_key');
       if (!apiKey) {
-        apiKey = prompt("Introduce tu API Key de Google AI Studio (la que empieza por AQ...):");
+        apiKey = prompt("Introduce tu API Key de Google AI Studio:");
         if (apiKey) {
           localStorage.setItem('gemini_api_key', apiKey.trim());
         } else {
@@ -2335,7 +2335,6 @@ function setupTrainerChat() {
         }
       }
 
-      // URL limpia sin la clave en la URL
       const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent`;
 
       const currentWeight = userProfile ? userProfile.weight : 80;
@@ -2349,11 +2348,11 @@ function setupTrainerChat() {
       - [ACTION: CHECKLIST]
       - [ACTION: INGREDIENT]`;
 
-      const response = await fetch(url, {
+      const apiResponse = await fetch(url, {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
-          "x-goog-api-key": apiKey.trim() // <-- Clave pasada por cabecera de seguridad
+          "x-goog-api-key": apiKey.trim()
         },
         body: JSON.stringify({
           contents: [
@@ -2362,12 +2361,11 @@ function setupTrainerChat() {
         })
       });
 
-      const data = await response.json();
+      const data = await apiResponse.json();
       
-      // Si Google devuelve un error en el JSON, lo capturamos para verlo claro
-      if (!response.ok) {
+      if (!apiResponse.ok) {
         console.error("Error de la API de Google:", data);
-        throw new Error(data.error?.message || "Error HTTP " + response.status);
+        throw new Error(data.error?.message || "Error HTTP " + apiResponse.status);
       }
 
       let botReply = "No he podido procesar la respuesta de la IA.";
@@ -2377,7 +2375,6 @@ function setupTrainerChat() {
 
       document.getElementById(loadingId)?.remove();
 
-      // Intérprete de acciones
       const todayKey = 'dailyChecklist_' + new Date().toISOString().split('T')[0];
 
       if (botReply.includes('[ACTION: SLEEP')) {
