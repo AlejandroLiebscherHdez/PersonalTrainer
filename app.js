@@ -634,32 +634,56 @@ function renderDietMeals() {
   document.getElementById('macro-fats').innerText = `${macros.fatsGrams} g`;
   document.getElementById('macro-fats-kcal').innerText = `${macros.fatsKcal} kcal`;
 
-  if (!customDietPlan) generateBaseDietPlan();
+  // --- Motor de Recomendaciones Estratégicas ---
+  const adviceBox = document.getElementById('nutrition-smart-advice');
+  if (adviceBox) {
+    let title = `<strong style="color: #38bdf8;">💡 Plan de Acción para Hoy:</strong>`;
+    let tips = `<span>• Tu prioridad absoluta es llegar a <strong>${macros.proteinGrams}g de proteína</strong>. Esto obliga al cuerpo a quemar grasa en lugar de perder masa muscular.</span>`;
+    
+    if (totalCal <= 1600) {
+      tips += `<span>• ⚠️ Tienes un presupuesto agresivo (<strong>${totalCal} kcal</strong>). Evita alimentos densos como frutos secos o aceite. Sáciate usando mucho volumen: brócoli, calabacín, claras de huevo y gelatinas cero.</span>`;
+    } else if (totalCal > 2100) {
+      tips += `<span>• 🔋 Gasto alto detectado. Puedes permitirte cargar más carbohidratos (tienes <strong>${macros.carbsGrams}g</strong>). Úsalos en la comida pre y post-entrenamiento para rendir mejor.</span>`;
+    } else {
+      tips += `<span>• Mantén un equilibrio siguiendo la regla del plato: mitad vegetales, un cuarto de proteína y un cuarto de carbohidratos.</span>`;
+    }
 
+    const hydration = dailyChecklist.water || 0;
+    if (hydration < 2.5) {
+      tips += `<span>• 💧 Llevas solo ${hydration.toFixed(1)}L de agua. El hígado no puede metabolizar grasa eficientemente si estás deshidratado.</span>`;
+    } else {
+      tips += `<span>• 🌊 ¡Hidratación óptima! Esto ayuda a limpiar toxinas y evita la retención de líquidos en la báscula.</span>`;
+    }
+    
+    adviceBox.innerHTML = title + tips;
+  }
+  // ---------------------------------------------
+
+  if (!customDietPlan) generateBaseDietPlan();
   container.innerHTML = customDietPlan.map((m, idx) => {
     const isCompleted = completedMeals.includes(m.id);
     return `
-      <div class="meal-card ${isCompleted ? 'completed' : ''}" id="meal-card-${m.id}">
-        <div class="meal-header">
-          <span class="meal-title-text">${m.title}</span>
-          <span class="meal-kcal-badge">~${m.kcal} kcal</span>
-        </div>
-        <ul class="meal-food-list">
-          ${m.items.map((item, itemIdx) => `
-            <li class="meal-food-item">
-              <span>${item}</span>
-              <button class="btn-delete-ex" title="Eliminar alimento" onclick="removeFoodItem(${idx}, ${itemIdx})">X</button>
-            </li>
-          `).join('')}
-        </ul>
-        <div class="meal-actions-row">
-          <button class="btn-meal-action" onclick="replaceMealAlternative('${m.id}', ${idx})">🔄 Alternativa</button>
-          <button class="btn-meal-action" onclick="addFoodToMealPrompt(${idx})">+ Añadir</button>
-          <button class="btn-meal-action ${isCompleted ? 'active' : ''}" onclick="toggleMealDone('${m.id}')">
-            ${isCompleted ? '✓ Hecha' : 'Completar'}
-          </button>
-        </div>
+    <div class="meal-card ${isCompleted ? 'completed' : ''}" id="meal-card-${m.id}">
+      <div class="meal-header">
+        <span class="meal-title-text">${m.title}</span>
+        <span class="meal-kcal-badge">~${m.kcal} kcal</span>
       </div>
+      <ul class="meal-food-list">
+        ${m.items.map((item, itemIdx) => `
+        <li class="meal-food-item">
+          <span>${item}</span>
+          <button class="btn-delete-ex" title="Eliminar alimento" onclick="removeFoodItem(${idx}, ${itemIdx})">X</button>
+        </li>
+        `).join('')}
+      </ul>
+      <div class="meal-actions-row">
+        <button class="btn-meal-action" onclick="replaceMealAlternative('${m.id}', ${idx})">🔄 Alternativa</button>
+        <button class="btn-meal-action" onclick="addFoodToMealPrompt(${idx})">+ Añadir</button>
+        <button class="btn-meal-action ${isCompleted ? 'active' : ''}" onclick="toggleMealDone('${m.id}')">
+          ${isCompleted ? '✓ Hecha' : 'Completar'}
+        </button>
+      </div>
+    </div>
     `;
   }).join('');
 }
@@ -1531,6 +1555,9 @@ function renderCoachEngine() {
   }
 
   container.innerHTML = adviceHTML + readinessAdvice + alertMessage;
+
+  // Forzar sincronización del Plan de Acción en Nutrición
+  if (typeof renderDietMeals === 'function') renderDietMeals();
 }
 
 function updateDashboardMetrics() {
