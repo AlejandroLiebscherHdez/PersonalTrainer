@@ -134,7 +134,7 @@
             <small id="macro-fats-kcal">-- kcal</small>
           </div>
         </div>
-        
+
         <div id="nutrition-smart-advice" style="margin-top: 14px; padding: 12px; border-radius: 10px; background: rgba(56, 189, 248, 0.08); border: 1px dashed #38bdf8; font-size: 0.85rem; line-height: 1.5; display: flex; flex-direction: column; gap: 8px;">
           Cargando recomendaciones estratégicas...
         </div>
@@ -195,11 +195,11 @@
         <h2>🥦 Despensa e Ingredientes Guardados</h2>
         <p class="modal-sub">Añade tus alimentos base con sus calorías y proteínas para usarlos en el creador de recetas.</p>
         <form id="ingredient-form" style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px;">
-          <input type="text" id="ing-name" placeholder="Nombre (ej: Arroz basmati)" required style="flex: 2;">
-          <input type="number" id="ing-weight" placeholder="Peso (g)" required style="flex: 1;">
-          <input type="number" id="ing-cal" placeholder="Kcal" required style="flex: 1;">
-          <input type="number" id="ing-prot" placeholder="Proteína (g)" required style="flex: 1;">
-          <button type="submit" class="btn-primary" style="flex: 1;">+ Añadir</button>
+          <input type="text" id="ing-name" placeholder="Nombre (ej: Arroz)" required style="flex: 2; min-width: 140px;">
+          <input type="number" id="ing-weight" placeholder="Peso (g)" required style="flex: 1; min-width: 70px;">
+          <input type="number" id="ing-cal" placeholder="Kcal" required style="flex: 1; min-width: 70px;">
+          <input type="number" id="ing-prot" placeholder="Proteína (g)" required style="flex: 1; min-width: 70px;">
+          <button type="submit" class="btn-primary" style="flex: 1; min-width: 80px;">+ Añadir</button>
         </form>
         <div id="ingredients-list" class="pill-container" style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px;"></div>
 
@@ -605,6 +605,6 @@
     </div>
   </div>
 
-  <script src="app.js?v=0.9.3"></script>
+  <script src="app.js?v=0.9.4"></script>
 </body>
 </html>

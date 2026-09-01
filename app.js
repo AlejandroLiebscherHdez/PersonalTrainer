@@ -815,14 +815,27 @@ function setupRoutineSystem() {
     userProfile.workoutFocus = focus;
     userProfile.workoutDays = daysCount;
     localStorage.setItem('userProfile', JSON.stringify(userProfile));
-    saveProfileToCloud();
+    if (typeof saveProfileToCloud === 'function') saveProfileToCloud();
 
     let list = JSON.parse(JSON.stringify(base));
+
+    // Rellenar con cardio si el usuario pide más días de los que tiene la plantilla
     while (list.length < daysCount) {
-      list.push({ day: `Día ${list.length + 1}`, focus: "Cardio / Pádel", exercises: [["Pádel o Deporte Libre", "60 min", "0"], ["Estiramientos", "10 min", "0"]] });
+      list.push({ day: "", focus: "Cardio / Recuperación", exercises: [["Pádel o Deporte Libre", "60 min", "0"], ["Estiramientos", "10 min", "0"]] });
     }
-    customRoutines = list.slice(0, daysCount);
+    
+    // Cortar si el usuario pide menos días
+    list = list.slice(0, daysCount);
+
+    // Sobreescribir nombres de los días secuencialmente
+    const dayNames = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
+    list.forEach((item, index) => {
+      item.day = dayNames[index] || `Día ${index + 1}`;
+    });
+
+    customRoutines = list;
     localStorage.setItem('customUserRoutines', JSON.stringify(customRoutines));
+    
     renderCurrentRoutine();
     renderVolumeChart();
   }
@@ -1652,19 +1665,41 @@ function renderStepsChart() {
 function renderStepsChart() {
   const canvas = document.getElementById('stepsChart');
   if (!canvas || typeof Chart === 'undefined') return;
-
   const ctx = canvas.getContext('2d');
-  const last7Health = allHealth.slice(-7);
-  const labels = last7Health.map(h => new Date(h.created_at).toLocaleDateString([], { weekday: 'short', day: 'numeric' }));
-  const stepsData = last7Health.map(h => h.steps || 0);
+  
+  const dailyStepsMap = {};
+  const validHealth = Array.isArray(allHealth) ? allHealth : [];
+  
+  // Agrupar por día local y quedarse con el valor máximo
+  validHealth.forEach(entry => {
+    if (entry.created_at) {
+      const d = new Date(entry.created_at);
+      const dayKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      const currentSteps = Number(entry.steps) || 0;
+      
+      if (!dailyStepsMap[dayKey] || currentSteps > dailyStepsMap[dayKey].steps) {
+        dailyStepsMap[dayKey] = { steps: currentSteps, dateObj: d };
+      }
+    }
+  });
 
-  if (stepsChartInstance) stepsChartInstance.destroy();
+  const sortedKeys = Object.keys(dailyStepsMap).sort();
+  const recentKeys = sortedKeys.slice(-7);
 
-  stepsChartInstance = new Chart(ctx, {
+  const labels = recentKeys.map(k => dailyStepsMap[k].dateObj.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric' }));
+  const stepsData = recentKeys.map(k => dailyStepsMap[k].steps);
+
+  if (window.stepsChartInstance) window.stepsChartInstance.destroy();
+  window.stepsChartInstance = new Chart(ctx, {
     type: 'bar',
     data: {
       labels: labels.length ? labels : ['Hoy'],
-      datasets: [{ label: 'Pasos', data: stepsData.length ? stepsData : [0], backgroundColor: '#38bdf8', borderRadius: 8 }]
+      datasets: [{
+        label: 'Pasos',
+        data: stepsData.length ? stepsData : [0],
+        backgroundColor: '#38bdf8',
+        borderRadius: 8
+      }]
     },
     options: {
       responsive: true,
