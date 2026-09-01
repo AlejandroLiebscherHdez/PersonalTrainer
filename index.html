@@ -49,14 +49,38 @@
 
       <section class="card checklist-card">
         <h2>✅ Checklist Diario de Alto Rendimiento</h2>
+        
+        <!-- Bloques Cuantitativos Nuevos -->
+        <div style="background: #0b0f19; border: 1px solid var(--card-border); padding: 12px; border-radius: 10px; margin-bottom: 12px;">
+          
+          <!-- Contador de Agua -->
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <span style="font-size: 0.85rem; font-weight: 600;">💧 Agua (Objetivo: 2.5L - 3L)</span>
+            <span id="water-val-display" style="color: var(--accent-blue); font-size: 1.1rem; font-weight: 800;">0.00 L</span>
+          </div>
+          <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+            <button class="btn-secondary" id="btn-water-minus" style="padding: 6px; flex: 1;">- 250ml</button>
+            <button class="btn-primary" id="btn-water-plus" style="padding: 6px; flex: 2; background: #0ea5e9;">+ 250ml</button>
+          </div>
+
+          <!-- Registro de Sueño -->
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <span style="font-size: 0.85rem; font-weight: 600;">😴 Horas de Sueño</span>
+            <span id="sleep-val-display" style="color: #a855f7; font-size: 1.1rem; font-weight: 800;">0 h</span>
+          </div>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <input type="number" id="input-sleep-hours" placeholder="Ej: 7.5" step="0.5" style="flex: 2; padding: 8px;">
+            <button class="btn-primary" id="btn-save-sleep" style="padding: 8px; flex: 1; background: #8b5cf6;">Guardar</button>
+          </div>
+        </div>
+
+        <!-- Hábitos Estándar (Checkboxes) -->
         <div class="checklist-group">
-          <label class="check-item"><input type="checkbox" id="chk-water"><span>💧 Hidratación (2.5L - 3L agua fresca)</span></label>
-          <label class="check-item"><input type="checkbox" id="chk-creatine"><span>💊 Suplementación / Creatina (dosis diaria)</span></label>
+          <label class="check-item"><input type="checkbox" id="chk-creatine"><span>💊 Suplementación / Creatina (dosis)</span></label>
           <label class="check-item"><input type="checkbox" id="chk-protein"><span>🥩 Meta Proteica (~1.8g - 2.0g/kg de peso)</span></label>
           <label class="check-item"><input type="checkbox" id="chk-steps"><span>🚶 Superar objetivo de 8.000 pasos</span></label>
-          <label class="check-item"><input type="checkbox" id="chk-workout"><span>🏋️ Sesión de entrenamiento o deporte completado</span></label>
+          <label class="check-item"><input type="checkbox" id="chk-workout"><span>🏋️ Sesión de entrenamiento o deporte</span></label>
           <label class="check-item"><input type="checkbox" id="chk-clean"><span>🚭 Día 100% libre de vapeo y nicotina</span></label>
-          <label class="check-item"><input type="checkbox" id="chk-sleep"><span>😴 Descanso regenerativo (7h - 8h de sueño)</span></label>
         </div>
       </section>
 
@@ -554,6 +578,6 @@
     </div>
   </div>
 
-  <script src="app.js?v=4.0"></script>
+  <script src="app.js?v=6.0"></script>
 </body>
 </html>

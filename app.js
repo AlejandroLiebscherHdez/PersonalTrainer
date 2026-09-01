@@ -1731,7 +1731,13 @@ function renderHeartZones() {
 
 function setupChecklist() {
   const todayKey = 'dailyChecklist_' + new Date().toISOString().split('T')[0];
-  const keys = ['water', 'creatine', 'protein', 'steps', 'workout', 'clean', 'sleep'];
+  
+  // Si venimos de la versión anterior (booleanos), convertimos agua y sueño a números
+  if (typeof dailyChecklist.water === 'boolean') dailyChecklist.water = 0;
+  if (typeof dailyChecklist.sleep === 'boolean') dailyChecklist.sleep = 0;
+
+  // 1. Lógica de Checkboxes Estándar (se quitaron water y sleep de esta lista)
+  const keys = ['creatine', 'protein', 'steps', 'workout', 'clean'];
   keys.forEach(k => {
     const el = document.getElementById('chk-' + k);
     if (el) {
@@ -1742,6 +1748,54 @@ function setupChecklist() {
       });
     }
   });
+
+  // 2. Lógica del Contador de Agua
+  const waterDisplay = document.getElementById('water-val-display');
+  const btnWaterPlus = document.getElementById('btn-water-plus');
+  const btnWaterMinus = document.getElementById('btn-water-minus');
+
+  const updateWaterUI = () => {
+    if (waterDisplay) waterDisplay.innerText = `${(dailyChecklist.water || 0).toFixed(2)} L`;
+  };
+  updateWaterUI();
+
+  if (btnWaterPlus) {
+    btnWaterPlus.addEventListener('click', () => {
+      dailyChecklist.water = (Number(dailyChecklist.water) || 0) + 0.25;
+      localStorage.setItem(todayKey, JSON.stringify(dailyChecklist));
+      updateWaterUI();
+    });
+  }
+  
+  if (btnWaterMinus) {
+    btnWaterMinus.addEventListener('click', () => {
+      dailyChecklist.water = Math.max(0, (Number(dailyChecklist.water) || 0) - 0.25);
+      localStorage.setItem(todayKey, JSON.stringify(dailyChecklist));
+      updateWaterUI();
+    });
+  }
+
+  // 3. Lógica del Registro de Sueño
+  const sleepDisplay = document.getElementById('sleep-val-display');
+  const sleepInput = document.getElementById('input-sleep-hours');
+  const btnSaveSleep = document.getElementById('btn-save-sleep');
+
+  const updateSleepUI = () => {
+    if (sleepDisplay) sleepDisplay.innerText = `${dailyChecklist.sleep || 0} h`;
+  };
+  updateSleepUI();
+
+  if (btnSaveSleep && sleepInput) {
+    btnSaveSleep.addEventListener('click', () => {
+      const val = Number(sleepInput.value);
+      if (val >= 0 && val <= 24) {
+        dailyChecklist.sleep = val;
+        localStorage.setItem(todayKey, JSON.stringify(dailyChecklist));
+        updateSleepUI();
+        sleepInput.value = ''; // Limpiar el input tras guardar
+      }
+    });
+  }
 }
 
 // ==========================================
