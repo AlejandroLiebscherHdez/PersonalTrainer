@@ -2277,7 +2277,7 @@ function renderWeightChart() {
 }
 
 // ==========================================
-// ASISTENTE VIRTUAL FLOTANTE (SEGURO)
+// ASISTENTE DE IA REAL CON GEMINI API
 // ==========================================
 function setupTrainerChat() {
   const toggleBtn = document.getElementById('btn-toggle-trainer-chat');
@@ -2301,38 +2301,105 @@ function setupTrainerChat() {
     });
   }
 
-  const handleUserMessage = () => {
+  // Chips de acceso rápido
+  document.querySelectorAll('.chat-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const cmd = chip.getAttribute('data-cmd');
+      if (inputEl) inputEl.value = cmd;
+      handleUserMessage();
+    });
+  });
+
+  const handleUserMessage = async () => {
     const text = inputEl.value.trim();
     if (!text) return;
 
+    // Mostrar mensaje del usuario
     messagesBox.innerHTML += `<div style="background: #2563eb; color: white; padding: 8px 12px; border-radius: 10px; align-self: flex-end; max-width: 80%;"> ${text}</div>`;
     inputEl.value = '';
     messagesBox.scrollTop = messagesBox.scrollHeight;
 
-    setTimeout(() => {
-      let botReply = "Entendido. Sigue registrando tus datos diarios para afinar las recomendaciones de rendimiento.";
-      const query = text.toLowerCase();
+    // Mostrar indicador de "escribiendo..."
+    const loadingId = 'loading-' + Date.now();
+    messagesBox.innerHTML += `<div id="${loadingId}" style="background: #1f2a44; border: 1px solid var(--card-border); padding: 8px 12px; border-radius: 10px; align-self: flex-start; color: var(--text-muted);">🤖 Pensando...</div>`;
+    messagesBox.scrollTop = messagesBox.scrollHeight;
 
-      const currentWeight = userProfile ? userProfile.weight : 80;
-      const targetLoss = userProfile ? userProfile.targetLossKg : 14;
-      const targetCals = document.getElementById('daily-target-calories')?.innerText || "1400 kcal";
-      const bodyFat = localStorage.getItem('latestBodyFat') || "No calculado";
+    try {
+      // Obtener clave de API de forma segura desde localStorage o pedirla si no existe
+      let apiKey = localStorage.getItem('gemini_api_key');
+      if (!apiKey) {
+        apiKey = prompt("Introduce tu API Key de Google AI Studio (se guardará de forma segura y privada en tu navegador):");
+        if (apiKey) {
+          localStorage.setItem('gemini_api_key', apiKey.trim());
+        } else {
+          document.getElementById(loadingId)?.remove();
+          messagesBox.innerHTML += `<div style="background: #ef4444; color: white; padding: 8px 12px; border-radius: 10px; align-self: flex-start;">Falta la API Key de Gemini para continuar.</div>`;
+          return;
+        }
+      }
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
-      if (query.includes('peso') || query.includes('kilos') || query.includes('bajar')) {
-        botReply = `Tu peso actual registrado es de ${currentWeight} kg y tu meta principal es bajar ${targetLoss} kg. Mantén el foco en el déficit diario.`;
-      } else if (query.includes('calorias') || query.includes('dieta') || query.includes('comer') || query.includes('kcal')) {
-        botReply = `Tu presupuesto recomendado actual es de ${targetCals}. Prioriza fuentes de proteína limpia y vegetales de alto volumen.`;
-      } else if (query.includes('grasa') || query.includes('composicion')) {
-        botReply = `Tu último porcentaje de grasa estimado (método US Navy) es del ${bodyFat}%. Recuerda medirte siempre en ayunas.`;
-      } else if (query.includes('entreno') || query.includes('rutina') || query.includes('fuerza')) {
-        botReply = `Para asegurar la sobrecarga progresiva, vigila las medallas de récords (🏆 PR) marcadas en naranja en tu plan semanal.`;
-      } else if (query.includes('hola') || query.includes('ayuda')) {
-        botReply = `¡Hola! Puedo informarte sobre tus calorías (${targetCals}), tu peso (${currentWeight} kg) o darte consejos de nutrición. ¿Qué necesitas saber?`;
+      const data = await response.json();
+      let botReply = "No he podido conectar con el servidor de Gemini.";
+
+      if (data.candidates && data.candidates[0].content.parts[0].text) {
+        botReply = data.candidates[0].content.parts[0].text;
       }
 
-      messagesBox.innerHTML += `<div style="background: #1f2a44; border: 1px solid var(--card-border, #1f2a44); padding: 8px 12px; border-radius: 10px; align-self: flex-start; max-width: 80%; color: var(--text-main, #f8fafc);">🤖 ${botReply}</div>`;
+      // Eliminar el cuadro de "Pensando..."
+      document.getElementById(loadingId)?.remove();
+
+      // --- INTÉRPRETE DE ACCIONES (AGENT ACTIONS) ---
+      const todayKey = 'dailyChecklist_' + new Date().toISOString().split('T')[0];
+
+      if (botReply.includes('[ACTION: SLEEP')) {
+        const match = botReply.match(/\[ACTION: SLEEP,\s*([\d.]+)\]/);
+        const hours = match ? parseFloat(match[1]) : 8;
+        dailyChecklist.sleep = hours;
+        localStorage.setItem(todayKey, JSON.stringify(dailyChecklist));
+        const sleepDisplay = document.getElementById('sleep-val-display');
+        if (sleepDisplay) sleepDisplay.innerText = `${hours} h`;
+        if (typeof renderCoachEngine === 'function') renderCoachEngine();
+        botReply = botReply.replace(/\[ACTION:.*?\]/g, ''); // Limpiar etiqueta visual
+      } 
+      else if (botReply.includes('[ACTION: WATER]')) {
+        dailyChecklist.water = (Number(dailyChecklist.water) || 0) + 0.5;
+        localStorage.setItem(todayKey, JSON.stringify(dailyChecklist));
+        const waterDisplay = document.getElementById('water-val-display');
+        if (waterDisplay) waterDisplay.innerText = `${dailyChecklist.water.toFixed(2)} L`;
+        botReply = botReply.replace(/\[ACTION:.*?\]/g, '');
+      }
+      else if (botReply.includes('[ACTION: CHECKLIST]')) {
+        dailyChecklist.creatine = true;
+        dailyChecklist.protein = true;
+        dailyChecklist.steps = true;
+        dailyChecklist.workout = true;
+        dailyChecklist.clean = true;
+        localStorage.setItem(todayKey, JSON.stringify(dailyChecklist));
+        ['creatine', 'protein', 'steps', 'workout', 'clean'].forEach(k => {
+          const el = document.getElementById('chk-' + k);
+          if (el) el.checked = true;
+        });
+        botReply = botReply.replace(/\[ACTION:.*?\]/g, '');
+      }
+      else if (botReply.includes('[ACTION: INGREDIENT]')) {
+        const newIng = { name: 'Arroz Basmati Extra', weight: 100, calories: 350, protein: 7 };
+        userIngredients.push(newIng);
+        localStorage.setItem('userIngredients', JSON.stringify(userIngredients));
+        if (typeof renderIngredients === 'function') renderIngredients();
+        if (typeof renderRecipeSelector === 'function') renderRecipeSelector();
+        botReply = botReply.replace(/\[ACTION:.*?\]/g, '');
+      }
+
+      // Mostrar respuesta definitiva de la IA
+      messagesBox.innerHTML += `<div style="background: #1f2a44; border: 1px solid var(--card-border); padding: 8px 12px; border-radius: 10px; align-self: flex-start; max-width: 80%; color: var(--text-main);">${botReply}</div>`;
       messagesBox.scrollTop = messagesBox.scrollHeight;
-    }, 500);
+
+    } catch (err) {
+      console.error(err);
+      document.getElementById(loadingId)?.remove();
+      messagesBox.innerHTML += `<div style="background: #ef4444; color: white; padding: 8px 12px; border-radius: 10px; align-self: flex-start;">Error al conectar con la API de IA.</div>`;
+    }
   };
 
   if (sendBtn) sendBtn.addEventListener('click', handleUserMessage);
