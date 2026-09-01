@@ -804,30 +804,32 @@ function setupRoutineSystem() {
   const selectDays = document.getElementById('workout-days-week');
   const btnGen = document.getElementById('btn-generate-routine');
 
-  if (userProfile && userProfile.workoutFocus && selectFocus) selectFocus.value = userProfile.workoutFocus;
-  if (userProfile && userProfile.workoutDays && selectDays) selectDays.value = userProfile.workoutDays;
+  // Blindaje para evitar que explote si el DOM aún no lo ha renderizado
+  if (userProfile) {
+    if (userProfile.workoutFocus && selectFocus) selectFocus.value = userProfile.workoutFocus;
+    if (userProfile.workoutDays && selectDays) selectDays.value = userProfile.workoutDays;
+  }
 
   function generateNewRoutine() {
     const focus = selectFocus ? selectFocus.value : 'fullbody';
     const daysCount = selectDays ? Number(selectDays.value) : 4;
     let base = ROUTINE_TEMPLATES[focus] || ROUTINE_TEMPLATES.fullbody;
 
-    userProfile.workoutFocus = focus;
-    userProfile.workoutDays = daysCount;
-    localStorage.setItem('userProfile', JSON.stringify(userProfile));
-    if (typeof saveProfileToCloud === 'function') saveProfileToCloud();
+    if (userProfile) {
+      userProfile.workoutFocus = focus;
+      userProfile.workoutDays = daysCount;
+      localStorage.setItem('userProfile', JSON.stringify(userProfile));
+      if (typeof saveProfileToCloud === 'function') saveProfileToCloud();
+    }
 
     let list = JSON.parse(JSON.stringify(base));
 
-    // Rellenar con cardio si el usuario pide más días de los que tiene la plantilla
     while (list.length < daysCount) {
       list.push({ day: "", focus: "Cardio / Recuperación", exercises: [["Pádel o Deporte Libre", "60 min", "0"], ["Estiramientos", "10 min", "0"]] });
     }
     
-    // Cortar si el usuario pide menos días
     list = list.slice(0, daysCount);
 
-    // Sobreescribir nombres de los días secuencialmente
     const dayNames = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
     list.forEach((item, index) => {
       item.day = dayNames[index] || `Día ${index + 1}`;
