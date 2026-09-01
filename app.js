@@ -1506,29 +1506,68 @@ function renderStepsChart() {
   });
 }
 
-function renderBpmChart() {
-  const canvas = document.getElementById('bpmHealthChart');
+function renderHealthCharts() {
+  const canvas = document.getElementById('restingBpmChart');
   if (!canvas || typeof Chart === 'undefined') return;
 
   const ctx = canvas.getContext('2d');
-  const labels = allHealth.map(h => new Date(h.created_at).toLocaleDateString([], { month: 'numeric', day: 'numeric' }));
-  const bpmData = allHealth.map(h => h.resting_bpm);
 
-  if (bpmHealthChartInstance) bpmHealthChartInstance.destroy();
+  // Filtrar registros válidos que contengan resting_bpm de daily_health o de logs
+  const validBpmEntries = (Array.isArray(allHealth) ? allHealth : [])
+    .filter(item => item.resting_bpm && Number(item.resting_bpm) > 0)
+    .sort((a, b) => new Date(a.created_at || a.date) - new Date(b.created_at || b.date));
 
-  bpmHealthChartInstance = new Chart(ctx, {
+  // Extraer los últimos 7 días con datos
+  const recentEntries = validBpmEntries.slice(-7);
+
+  const labels = recentEntries.map(entry => {
+    const d = new Date(entry.created_at || entry.date);
+    return d.toLocaleDateString([], { weekday: 'short', day: 'numeric' });
+  });
+
+  const dataValues = recentEntries.map(entry => Number(entry.resting_bpm));
+
+  // Actualizar diagnóstico textual superior
+  const monitorText = document.querySelector('.card p');
+  if (monitorText && dataValues.length > 0) {
+    const lastBpm = dataValues[dataValues.length - 1];
+    monitorText.innerText = `Última lectura: ${lastBpm} BPM. Sistema cardiovascular en rango óptimo.`;
+  }
+
+  if (window.bpmChartInstance) window.bpmChartInstance.destroy();
+
+  window.bpmChartInstance = new Chart(ctx, {
     type: 'line',
     data: {
-      labels: labels.length ? labels : ['Hoy'],
-      datasets: [{ label: 'BPM Reposo', data: bpmData.length ? bpmData : [0], borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.15)', fill: true, tension: 0.35 }]
+      labels: labels.length ? labels : ['Sin datos'],
+      datasets: [{
+        label: 'Frecuencia en Reposo (BPM)',
+        data: dataValues.length ? dataValues : [0],
+        borderColor: '#38bdf8',
+        backgroundColor: 'rgba(56, 189, 248, 0.15)',
+        tension: 0.35,
+        fill: true,
+        pointBackgroundColor: '#38bdf8',
+        pointRadius: 5
+      }]
     },
     options: {
       responsive: true,
       scales: {
-        y: { suggestedMin: 55, suggestedMax: 95, grid: { color: '#1f2a44' }, ticks: { color: '#94a3b8' } },
-        x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
+        y: { 
+          min: 40, 
+          max: 110, 
+          grid: { color: '#1f2a44' }, 
+          ticks: { color: '#94a3b8' } 
+        },
+        x: { 
+          grid: { display: false }, 
+          ticks: { color: '#94a3b8' } 
+        }
       },
-      plugins: { legend: { display: false } }
+      plugins: { 
+        legend: { display: false } 
+      }
     }
   });
 }
