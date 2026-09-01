@@ -55,6 +55,15 @@
           </div>
         </section>
 
+        <!-- NUEVA TARJETA DE CONSISTENCIA EN MI PLAN -->
+        <section class="card summary-card" style="margin-top: 14px;">
+            <h2>🔥 Índice de Adherencia Semanal</h2>
+            <div style="display: flex; justify-content: space-between; align-items: center; background: #0b0f19; padding: 12px; border-radius: 10px; border: 1px solid var(--card-border);">
+            <span style="font-size: 0.85rem; color: var(--text-muted);">Consistencia en Hábitos (7d):</span>
+            <span id="adherence-score-display" style="font-size: 1.1rem; font-weight: 800; color: var(--accent-green);">85% (Alto)</span>
+            </div>
+        </section>
+
         <section class="card checklist-card">
           <h2>✅ Checklist Diario de Alto Rendimiento</h2>
         
@@ -146,11 +155,6 @@
           <div style="max-width: 220px; margin: 0 auto;">
             <canvas id="macroDoughnutChart"></canvas>
           </div>
-        </div>
-      </section>
-
-        <div id="nutrition-smart-advice" style="margin-top: 14px; padding: 12px; border-radius: 10px; background: rgba(56, 189, 248, 0.08); border: 1px dashed #38bdf8; font-size: 0.85rem; line-height: 1.5; display: flex; flex-direction: column; gap: 8px;">
-          Cargando recomendaciones estratégicas...
         </div>
       </section>
 
@@ -323,6 +327,21 @@
 
     <!-- PESTAÑA 4: SALUD -->
     <main id="tab-health" class="tab-content">
+
+      <section class="card summary-card">
+        <h2>📊 Balance Biométrico & Carga</h2>
+        <div class="metrics-grid">
+          <div class="metric-box">
+            <span class="metric-title">Pulso Mínimo 7D</span>
+            <span id="health-min-bpm" class="metric-value" style="color: var(--accent-green);">-- bpm</span>
+          </div>
+          <div class="metric-box">
+            <span class="metric-title">Eficiencia Cardíaca</span>
+            <span id="health-efficiency" class="metric-value" style="color: var(--accent-blue);">Óptima</span>
+          </div>
+        </div>
+      </section>
+
       <section class="card diagnosis-card">
         <h2>🩺 Monitor Cardiovascular & Autonómico</h2>
         <div id="bpm-diagnostic-container" class="diagnostic-box">
@@ -622,6 +641,33 @@
           <button type="button" id="btn-close-manual-recipe" class="btn-secondary" style="flex: 1;">Cancelar</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- WIDGET DE CHAT IA FLOTANTE (FASE 11)       -->
+  <!-- ========================================== -->
+  <div id="trainer-chat-widget" style="position: fixed; bottom: 20px; right: 20px; z-index: 9999;">
+    <!-- Botón flotante para abrir/cerrar -->
+    <button id="btn-toggle-trainer-chat" style="background: #2563eb; color: white; border: none; width: 55px; height: 55px; border-radius: 50%; box-shadow: 0 4px 14px rgba(37, 99, 235, 0.5); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; transition: transform 0.2s;">
+      🤖
+    </button>
+
+    <!-- Ventana del Chat -->
+    <div id="trainer-chat-window" style="display: none; position: absolute; bottom: 70px; right: 0; width: 320px; max-width: 90vw; background: var(--card-bg, #131b2e); border: 1px solid var(--card-border, #1f2a44); border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.6); overflow: hidden; flex-direction: column;">
+      <div style="background: #1f2a44; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-weight: 700; font-size: 0.9rem; color: var(--text-main, #f8fafc);">🤖 Alejandro Trainer Bot</span>
+        <button id="btn-close-trainer-chat" style="background: none; border: none; color: var(--text-muted, #94a3b8); font-size: 1.2rem; cursor: pointer;">&times;</button>
+      </div>
+      <div id="trainer-chat-messages" style="padding: 12px; height: 260px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; font-size: 0.85rem;">
+        <div style="background: rgba(56, 189, 248, 0.1); border: 1px solid var(--card-border, #1f2a44); padding: 8px 12px; border-radius: 10px; align-self: flex-start; color: var(--text-main, #f8fafc);">
+          ¡Hola, atleta! Soy tu asistente virtual. ¿En qué te puedo ayudar hoy con tu déficit, macros o entrenamiento?
+        </div>
+      </div>
+      <div style="padding: 10px; border-top: 1px solid var(--card-border, #1f2a44); display: flex; gap: 6px; background: #0b0f19;">
+        <input type="text" id="trainer-chat-input" placeholder="Escribe tu consulta..." style="flex: 1; padding: 8px 12px; font-size: 0.85rem; border-radius: 8px; border: 1px solid var(--card-border, #1f2a44); background: #131b2e; color: #fff; outline: none;">
+        <button id="trainer-chat-send" style="background: #2563eb; color: white; border: none; padding: 0 12px; border-radius: 8px; font-weight: 700; cursor: pointer;">Enviar</button>
+      </div>
     </div>
   </div>
 

@@ -638,22 +638,20 @@ function renderDietMeals() {
   // --- Motor de Recomendaciones Estratégicas ---
   const adviceBox = document.getElementById('nutrition-smart-advice');
   if (adviceBox) {
-    let title = `<strong style="color: #38bdf8;">💡 Plan de Acción para Hoy:</strong>`;
-    let tips = `<span>• Tu prioridad absoluta es llegar a <strong>${macros.proteinGrams}g de proteína</strong>. Esto obliga al cuerpo a quemar grasa en lugar de perder masa muscular.</span>`;
+    let title = `<strong style="color: #38bdf8;">💡 Plan de Acción para Hoy:</strong><br>`;
+    let tips = `<span>• Tu prioridad absoluta es llegar a <strong>${macros.proteinGrams}g de proteína</strong> para proteger tu masa muscular.</span><br>`;
     
     if (totalCal <= 1600) {
-      tips += `<span>• ⚠️ Tienes un presupuesto agresivo (<strong>${totalCal} kcal</strong>). Evita alimentos densos como frutos secos o aceite. Sáciate usando mucho volumen: brócoli, calabacín, claras de huevo y gelatinas cero.</span>`;
-    } else if (totalCal > 2100) {
-      tips += `<span>• 🔋 Gasto alto detectado. Puedes permitirte cargar más carbohidratos (tienes <strong>${macros.carbsGrams}g</strong>). Úsalos en la comida pre y post-entrenamiento para rendir mejor.</span>`;
+      tips += `<span>• ⚠️ Presupuesto agresivo (<strong>${totalCal} kcal</strong>). Usa alimentos de alto volumen como vegetales y claras.</span>`;
     } else {
-      tips += `<span>• Mantén un equilibrio siguiendo la regla del plato: mitad vegetales, un cuarto de proteína y un cuarto de carbohidratos.</span>`;
+      tips += `<span>• 🔋 Tienes margen calórico óptimo. Aprovecha los carbohidratos en torno al entrenamiento.</span>`;
     }
 
     const hydration = dailyChecklist.water || 0;
     if (hydration < 2.5) {
-      tips += `<span>• 💧 Llevas solo ${hydration.toFixed(1)}L de agua. El hígado no puede metabolizar grasa eficientemente si estás deshidratado.</span>`;
+      tips += `<br><span>• 💧 Llevas ${hydration.toFixed(1)}L de agua. ¡Hidrátate bien para metabolizar mejor la grasa!</span>`;
     } else {
-      tips += `<span>• 🌊 ¡Hidratación óptima! Esto ayuda a limpiar toxinas y evita la retención de líquidos en la báscula.</span>`;
+      tips += `<br><span>• 🌊 ¡Hidratación óptima alcanzada!</span>`;
     }
     
     adviceBox.innerHTML = title + tips;
@@ -1518,24 +1516,28 @@ async function loadData() {
     const dataHealth = await resHealth.json();
     const dataWorkouts = await resWorkouts.json();
     const dataMetrics = await resMetrics.json();
-
+    
     allLogs = Array.isArray(dataLogs) ? dataLogs : [];
     allHealth = Array.isArray(dataHealth) ? dataHealth : [];
     allWorkouts = Array.isArray(dataWorkouts) ? dataWorkouts : [];
     allBodyMetrics = Array.isArray(dataMetrics) ? dataMetrics : [];
-
+    
     const lastRelapse = allLogs.find(l => l.type === 'recaida');
     if (lastRelapse) {
       cleanSince = new Date(lastRelapse.created_at).getTime();
     }
 
+    // --- LLAMADAS DE RENDERIZADO ---
     if (typeof updateDashboardMetrics === 'function') updateDashboardMetrics();
     if (typeof renderCoachEngine === 'function') renderCoachEngine();
     if (typeof renderStepsChart === 'function') renderStepsChart();
     if (typeof renderHealthCharts === 'function') renderHealthCharts();
     if (typeof renderWorkoutsList === 'function') renderWorkoutsList();
     if (typeof renderDiagnostic === 'function') renderDiagnostic();
-    if (typeof renderWeightChart === 'function') renderWeightChart(); // Llama a la nueva gráfica
+    if (typeof renderWeightChart === 'function') renderWeightChart();
+    
+    // ➔ PÉGALA AQUÍ EXACTAMENTE:
+    if (typeof updateHealthStats === 'function') updateHealthStats();
 
   } catch (err) {
     console.error("Error cargando datos:", err);
@@ -2187,6 +2189,17 @@ function initApp() {
   setInterval(loadData, 10000);
 }
 
+function updateHealthStats() {
+  const validBpmLogs = (Array.isArray(allHealth) ? allHealth : []).filter(h => h.resting_bpm && Number(h.resting_bpm) > 35);
+  const minBpmEl = document.getElementById('health-min-bpm');
+  
+  if (minBpmEl && validBpmLogs.length > 0) {
+    const recentBpm = validBpmLogs.slice(-7).map(h => Number(h.resting_bpm));
+    const minVal = Math.min(...recentBpm);
+    minBpmEl.innerText = `${minVal} bpm`;
+  }
+}
+
 function renderWeightChart() {
   const canvas = document.getElementById('weightChart');
   if (!canvas || typeof Chart === 'undefined') return;
@@ -2259,3 +2272,72 @@ function renderWeightChart() {
     }
   });
 }
+
+// ==========================================
+// ASISTENTE VIRTUAL FLOTANTE (FASE 11)
+// ==========================================
+document.addEventListener('DOMContentLoaded', () => {
+  const toggleBtn = document.getElementById('btn-toggle-trainer-chat');
+  const closeBtn = document.getElementById('btn-close-trainer-chat');
+  const chatWindow = document.getElementById('trainer-chat-window');
+  const sendBtn = document.getElementById('trainer-chat-send');
+  const inputEl = document.getElementById('trainer-chat-input');
+  const messagesBox = document.getElementById('trainer-chat-messages');
+
+  if (!toggleBtn || !chatWindow) return;
+
+  toggleBtn.addEventListener('click', () => {
+    const isVisible = chatWindow.style.display === 'flex';
+    chatWindow.style.display = isVisible ? 'none' : 'flex';
+    if (!isVisible && inputEl) inputEl.focus();
+  });
+
+  if (closeBtn) {
+    closeBtn.addEventListener('click', () => {
+      chatWindow.style.display = 'none';
+    });
+  }
+
+  const handleUserMessage = () => {
+    const text = inputEl.value.trim();
+    if (!text) return;
+
+    // Mostrar mensaje del usuario
+    messagesBox.innerHTML += `<div style="background: #2563eb; color: white; padding: 8px 12px; border-radius: 10px; align-self: flex-end; max-width: 80%;"> ${text}</div>`;
+    inputEl.value = '';
+    messagesBox.scrollTop = messagesBox.scrollHeight;
+
+    // Generar respuesta analítica del bot basada en tu perfil real
+    setTimeout(() => {
+      let botReply = "Entendido. Sigue registrando tus datos diarios para afinar las recomendaciones de rendimiento.";
+      const query = text.toLowerCase();
+
+      const currentWeight = userProfile ? userProfile.weight : 80;
+      const targetLoss = userProfile ? userProfile.targetLossKg : 14;
+      const targetCals = document.getElementById('daily-target-calories')?.innerText || "1400 kcal";
+      const bodyFat = localStorage.getItem('latestBodyFat') || "No calculado";
+
+      if (query.includes('peso') || query.includes('kilos') || query.includes('bajar')) {
+        botReply = `Tu peso actual registrado es de ${currentWeight} kg y tu meta principal es bajar ${targetLoss} kg. Mantén el foco en el déficit diario.`;
+      } else if (query.includes('calorias') || query.includes('dieta') || query.includes('comer') || query.includes('kcal')) {
+        botReply = `Tu presupuesto recomendado actual es de ${targetCals}. Prioriza fuentes de proteína limpia y vegetales de alto volumen.`;
+      } else if (query.includes('grasa') || query.includes('composicion')) {
+        botReply = `Tu último porcentaje de grasa estimado (método US Navy) es del ${bodyFat}%. Recuerda medirte siempre en ayunas.`;
+      } else if (query.includes('entreno') || query.includes('rutina') || query.includes('fuerza')) {
+        botReply = `Para asegurar la sobrecarga progresiva, vigila las medallas de récords (🏆 PR) marcadas en naranja en tu plan semanal.`;
+      } else if (query.includes('hola') || query.includes('ayuda')) {
+        botReply = `¡Hola! Puedo informarte sobre tus calorías (${targetCals}), tu peso (${currentWeight} kg) o darte consejos de nutrición. ¿Qué necesitas saber?`;
+      }
+
+      messagesBox.innerHTML += `<div style="background: #1f2a44; border: 1px solid var(--card-border, #1f2a44); padding: 8px 12px; border-radius: 10px; align-self: flex-start; max-width: 80%; color: var(--text-main, #f8fafc);">🤖 ${botReply}</div>`;
+      messagesBox.scrollTop = messagesBox.scrollHeight;
+    }, 500);
+  };
+
+  if (sendBtn) sendBtn.addEventListener('click', handleUserMessage);
+  if (inputEl) {
+    inputEl.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') handleUserMessage();
+    });
+  }
+});
