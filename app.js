@@ -2,6 +2,7 @@ const SUPABASE_URL = "https://fckhkuamvuhgsbofncjh.supabase.co";
 const SUPABASE_KEY = "sb_publishable_yioP3kIKXyRowVXpvPUpMw_GNQotMVy";
 
 let authSession = JSON.parse(localStorage.getItem('supabase_auth_session')) || null;
+let exercisePRs = JSON.parse(localStorage.getItem('exercisePRs')) || {};
 
 function getAuthHeaders() {
   const token = authSession ? authSession.access_token : SUPABASE_KEY;
@@ -846,41 +847,45 @@ function renderCurrentRoutine() {
     const dayKcal = Math.round(200 + (dayTonnage * 0.015));
 
     return `
-      <div class="routine-day-card ${isDone ? 'completed-workout' : ''}">
-        <div class="routine-day-header">
-          <span class="routine-day-name">${r.day}</span>
-          <span class="routine-day-focus">${r.focus}</span>
-        </div>
-        <div class="workout-stats-summary">
-          <span>Volumen: <strong>${dayTonnage.toLocaleString()} kg</strong></span>
-          <span>Gasto Estimado: <strong>~${dayKcal} kcal</strong></span>
-        </div>
-        <ul class="exercise-list">
-          ${r.exercises.map((ex, eIdx) => {
-            const exKey = `${dIdx}_${eIdx}`;
-            const isChecked = !!checkedExercises[exKey];
-            const kgVal = ex[2] !== undefined ? ex[2] : "0";
-            return `
-              <li class="exercise-item">
-                <div style="display: flex; align-items: center; gap: 8px;">
-                  <input type="checkbox" class="exercise-check-box" ${isChecked ? 'checked' : ''} onchange="toggleExerciseCheck(${dIdx}, ${eIdx})">
-                  <span style="${isChecked ? 'text-decoration: line-through; color: #94a3b8;' : ''}">${ex[0]}</span>
-                </div>
-                <div class="exercise-meta-row">
-                  <span class="exercise-sets" onclick="editExerciseSets(${dIdx}, ${eIdx})">${ex[1]}</span>
-                  <span class="exercise-kg-badge" onclick="editExerciseKg(${dIdx}, ${eIdx})">${kgVal} kg</span>
-                  <button class="btn-delete-ex" title="Eliminar ejercicio" onclick="deleteExercise(${dIdx}, ${eIdx})">X</button>
-                </div>
-              </li>
-            `;
-          }).join('')}
-        </ul>
-        <button class="btn-add-ex" onclick="addNewExerciseToDay(${dIdx})">+ Añadir ejercicio a ${r.day}</button>
-        <button class="btn-complete-workout ${isDone ? 'completed' : ''}" onclick="toggleWorkoutCompleted(${dIdx}, ${dayTonnage}, ${dayKcal}, ${dayReps})">
-          ${isDone ? '✓ Sesión Completada (Registrada)' : '✓ Completar Sesión de Hoy'}
-        </button>
+    <div class="routine-day-card ${isDone ? 'completed-workout' : ''}">
+      <div class="routine-day-header">
+        <span class="routine-day-name">${r.day}</span>
+        <span class="routine-day-focus">${r.focus}</span>
       </div>
-    `;
+      <div class="workout-stats-summary">
+        <span>Volumen: <strong>${dayTonnage.toLocaleString()} kg</strong></span>
+        <span>Gasto Estimado: <strong>~${dayKcal} kcal</strong></span>
+      </div>
+      <ul class="exercise-list">
+        ${r.exercises.map((ex, eIdx) => {
+          const exKey = `${dIdx}_${eIdx}`;
+          const isChecked = !!checkedExercises[exKey];
+          const exName = ex[0];
+          const kgVal = ex[2] !== undefined ? ex[2] : "0";
+          
+          // Inyectar medalla de Récord Personal (PR)
+          const pr = exercisePRs[exName] ? exercisePRs[exName] : 0;
+          const prBadge = pr > 0 ? `<span style="font-size: 0.7rem; color: #f59e0b; margin-left: 8px; font-weight: 700;">🏆 PR: ${pr} kg</span>` : '';
+
+          return `
+          <li class="exercise-item">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <input type="checkbox" class="exercise-check-box" ${isChecked ? 'checked' : ''} onchange="toggleExerciseCheck(${dIdx}, ${eIdx})">
+              <span style="${isChecked ? 'text-decoration: line-through; color: #94a3b8;' : ''}">${exName} ${prBadge}</span>
+            </div>
+            <div class="exercise-meta-row">
+              <span class="exercise-sets" onclick="editExerciseSets(${dIdx}, ${eIdx})">${ex[1]}</span>
+              <span class="exercise-kg-badge" onclick="editExerciseKg(${dIdx}, ${eIdx})">${kgVal} kg</span>
+              <button class="btn-delete-ex" title="Eliminar ejercicio" onclick="deleteExercise(${dIdx}, ${eIdx})">X</button>
+            </div>
+          </li>`;
+        }).join('')}
+      </ul>
+      <button class="btn-add-ex" onclick="addNewExerciseToDay(${dIdx})">+ Añadir ejercicio a ${r.day}</button>
+      <button class="btn-complete-workout ${isDone ? 'completed' : ''}" onclick="toggleWorkoutCompleted(${dIdx}, ${dayTonnage}, ${dayKcal}, ${dayReps})">
+        ${isDone ? 'Sesión Completada (Registrada)' : 'Completar Sesión de Hoy'}
+      </button>
+    </div>`;
   }).join('');
 }
 
@@ -923,13 +928,25 @@ window.toggleWorkoutCompleted = async function(dIdx, tonnage, kcal, reps) {
   renderVolumeChart();
 };
 
-window.editExerciseKg = function(dayIdx, exIdx) {
+window.editExerciseKg = function (dayIdx, exIdx) {
   const current = customRoutines[dayIdx].exercises[exIdx];
+  const exName = current[0];
   const currentKg = current[2] || "0";
-  const newKg = prompt(`Introduce los kilos para "${current[0]}":`, currentKg);
+  
+  const newKg = prompt(`Introduce los kilos para "${exName}":`, currentKg);
+  
   if (newKg !== null && !isNaN(newKg)) {
-    customRoutines[dayIdx].exercises[exIdx][2] = String(Number(newKg));
+    const kgNum = Number(newKg);
+    customRoutines[dayIdx].exercises[exIdx][2] = String(kgNum);
     localStorage.setItem('customUserRoutines', JSON.stringify(customRoutines));
+    
+    // Lógica de Sobrecarga Progresiva (PR)
+    if (!exercisePRs[exName] || kgNum > exercisePRs[exName]) {
+      exercisePRs[exName] = kgNum;
+      localStorage.setItem('exercisePRs', JSON.stringify(exercisePRs));
+      if (kgNum > 0) alert(`🏆 ¡Nuevo récord en ${exName}! Has levantado ${kgNum} kg.`);
+    }
+    
     renderCurrentRoutine();
     renderVolumeChart();
   }
