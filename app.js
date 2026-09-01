@@ -2277,7 +2277,7 @@ function renderWeightChart() {
 }
 
 // ==========================================
-// ASISTENTE DE IA REAL CON GEMINI API
+// ASISTENTE DE IA REAL CON GEMINI API (FIXED)
 // ==========================================
 function setupTrainerChat() {
   const toggleBtn = document.getElementById('btn-toggle-trainer-chat');
@@ -2314,21 +2314,18 @@ function setupTrainerChat() {
     const text = inputEl.value.trim();
     if (!text) return;
 
-    // Mostrar mensaje del usuario
     messagesBox.innerHTML += `<div style="background: #2563eb; color: white; padding: 8px 12px; border-radius: 10px; align-self: flex-end; max-width: 80%;"> ${text}</div>`;
     inputEl.value = '';
     messagesBox.scrollTop = messagesBox.scrollHeight;
 
-    // Mostrar indicador de "escribiendo..."
     const loadingId = 'loading-' + Date.now();
     messagesBox.innerHTML += `<div id="${loadingId}" style="background: #1f2a44; border: 1px solid var(--card-border); padding: 8px 12px; border-radius: 10px; align-self: flex-start; color: var(--text-muted);">🤖 Pensando...</div>`;
     messagesBox.scrollTop = messagesBox.scrollHeight;
 
     try {
-      // Obtener clave de API de forma segura desde localStorage o pedirla si no existe
       let apiKey = localStorage.getItem('gemini_api_key');
       if (!apiKey) {
-        apiKey = prompt("Introduce tu API Key de Google AI Studio (se guardará de forma segura y privada en tu navegador):");
+        apiKey = prompt("Introduce tu API Key de Google AI Studio (la que empieza por AQ...):");
         if (apiKey) {
           localStorage.setItem('gemini_api_key', apiKey.trim());
         } else {
@@ -2337,19 +2334,50 @@ function setupTrainerChat() {
           return;
         }
       }
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+
+      // URL limpia sin la clave en la URL
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent`;
+
+      const currentWeight = userProfile ? userProfile.weight : 80;
+      const targetCals = document.getElementById('daily-target-calories')?.innerText || "2000 kcal";
+
+      const systemPrompt = `Eres Alejandro Trainer Bot, un asistente experto en fitness, nutrición, suplementación y rendimiento deportivo. 
+      El usuario actual pesa ${currentWeight} kg y su objetivo calórico diario es ${targetCals}. 
+      Responde con cercanía, rigor y motivación. Si el usuario pide una acción, añade al final de tu respuesta:
+      - [ACTION: SLEEP, X] (donde X son las horas)
+      - [ACTION: WATER]
+      - [ACTION: CHECKLIST]
+      - [ACTION: INGREDIENT]`;
+
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          "x-goog-api-key": apiKey.trim() // <-- Clave pasada por cabecera de seguridad
+        },
+        body: JSON.stringify({
+          contents: [
+            { role: "user", parts: [{ text: systemPrompt + "\n\nUsuario: " + text }] }
+          ]
+        })
+      });
 
       const data = await response.json();
-      let botReply = "No he podido conectar con el servidor de Gemini.";
+      
+      // Si Google devuelve un error en el JSON, lo capturamos para verlo claro
+      if (!response.ok) {
+        console.error("Error de la API de Google:", data);
+        throw new Error(data.error?.message || "Error HTTP " + response.status);
+      }
 
+      let botReply = "No he podido procesar la respuesta de la IA.";
       if (data.candidates && data.candidates[0].content.parts[0].text) {
         botReply = data.candidates[0].content.parts[0].text;
       }
 
-      // Eliminar el cuadro de "Pensando..."
       document.getElementById(loadingId)?.remove();
 
-      // --- INTÉRPRETE DE ACCIONES (AGENT ACTIONS) ---
+      // Intérprete de acciones
       const todayKey = 'dailyChecklist_' + new Date().toISOString().split('T')[0];
 
       if (botReply.includes('[ACTION: SLEEP')) {
@@ -2360,7 +2388,7 @@ function setupTrainerChat() {
         const sleepDisplay = document.getElementById('sleep-val-display');
         if (sleepDisplay) sleepDisplay.innerText = `${hours} h`;
         if (typeof renderCoachEngine === 'function') renderCoachEngine();
-        botReply = botReply.replace(/\[ACTION:.*?\]/g, ''); // Limpiar etiqueta visual
+        botReply = botReply.replace(/\[ACTION:.*?\]/g, '');
       } 
       else if (botReply.includes('[ACTION: WATER]')) {
         dailyChecklist.water = (Number(dailyChecklist.water) || 0) + 0.5;
@@ -2391,14 +2419,13 @@ function setupTrainerChat() {
         botReply = botReply.replace(/\[ACTION:.*?\]/g, '');
       }
 
-      // Mostrar respuesta definitiva de la IA
       messagesBox.innerHTML += `<div style="background: #1f2a44; border: 1px solid var(--card-border); padding: 8px 12px; border-radius: 10px; align-self: flex-start; max-width: 80%; color: var(--text-main);">${botReply}</div>`;
       messagesBox.scrollTop = messagesBox.scrollHeight;
 
     } catch (err) {
-      console.error(err);
+      console.error("Error completo en chat:", err);
       document.getElementById(loadingId)?.remove();
-      messagesBox.innerHTML += `<div style="background: #ef4444; color: white; padding: 8px 12px; border-radius: 10px; align-self: flex-start;">Error al conectar con la API de IA.</div>`;
+      messagesBox.innerHTML += `<div style="background: #ef4444; color: white; padding: 8px 12px; border-radius: 10px; align-self: flex-start;">Error de IA: ${err.message}</div>`;
     }
   };
 
