@@ -1244,6 +1244,47 @@ function setupProfileModal() {
       renderDietMeals();
     });
   }
+  // --- Generador de Informe CSV ---
+  const btnExport = document.getElementById('btn-export-data');
+  if (btnExport) {
+    btnExport.addEventListener('click', () => {
+      let csvContent = "data:text/csv;charset=utf-8,Fecha,Peso (kg),Pasos,Pulso Reposo (BPM)\n";
+      
+      const metricsArray = Array.isArray(allBodyMetrics) ? allBodyMetrics : [];
+      const healthArray = Array.isArray(allHealth) ? allHealth : [];
+
+      // Extraer y unificar todas las fechas únicas
+      const rawDates = [
+        ...metricsArray.map(m => m.created_at?.split('T')[0]),
+        ...healthArray.map(h => h.created_at?.split('T')[0])
+      ];
+      const uniqueDates = [...new Set(rawDates)].filter(Boolean).sort();
+
+      if (uniqueDates.length === 0) {
+        return alert("No hay suficientes datos registrados para exportar.");
+      }
+
+      // Cruzar datos día a día
+      uniqueDates.forEach(date => {
+        const weightEntry = metricsArray.reverse().find(m => m.created_at?.startsWith(date));
+        const healthEntry = healthArray.reverse().find(h => h.created_at?.startsWith(date));
+        
+        const weight = weightEntry?.weight_kg || '';
+        const steps = healthEntry?.steps || '';
+        const bpm = healthEntry?.resting_bpm || '';
+        
+        csvContent += `${date},${weight},${steps},${bpm}\n`;
+      });
+
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", "Alejandro_Trainer_Progreso.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    });
+  }
 }
 
 // ==========================================

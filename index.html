@@ -541,6 +541,12 @@
           <input type="range" id="prof-weeks" min="2" max="24" value="8">
           <div class="calculated-plan" id="preview-plan"></div>
         </div>
+        
+        <!-- NUEVO: Botón de Exportación -->
+        <button type="button" id="btn-export-data" class="btn-secondary" style="width: 100%; margin-bottom: 14px; border: 1px dashed var(--accent-blue); color: var(--accent-blue);">
+          📥 Descargar Historial de Progreso (CSV)
+        </button>
+
         <div class="modal-actions">
           <button type="button" id="btn-close-modal" class="btn-secondary">Cerrar</button>
           <button type="submit" class="btn-primary">Guardar Ajustes</button>
@@ -605,6 +611,6 @@
     </div>
   </div>
 
-  <script src="app.js?v=0.9.4"></script>
+  <script src="app.js?v=0.9.6"></script>
 </body>
 </html>
