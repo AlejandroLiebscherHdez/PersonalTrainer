@@ -148,7 +148,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // ==========================================
-// SINCRONIZACIÓN CON SUPABASE
+// SINCRONIZACIÓN ROBUSTA DE PERFIL CON SUPABASE
 // ==========================================
 async function syncProfileFromCloud() {
   if (!authSession || !authSession.user) return;
@@ -157,6 +157,7 @@ async function syncProfileFromCloud() {
       headers: getAuthHeaders()
     });
     const data = await res.json();
+
     if (Array.isArray(data) && data.length > 0) {
       const cloud = data[0];
       userProfile = {
@@ -175,14 +176,74 @@ async function syncProfileFromCloud() {
         workoutDays: userProfile?.workoutDays || 4
       };
       localStorage.setItem('userProfile', JSON.stringify(userProfile));
-      document.getElementById('user-greeting').innerHTML = `${userProfile.name} <span>Trainer</span>`;
-      document.getElementById('user-goal-subtitle').innerText = `Meta: Bajar ${userProfile.targetLossKg} kg en ${userProfile.weeks} semanas`;
+    } else {
+      // Si la cuenta es nueva o no tiene fila en Supabase, subir el perfil local actual
+      if (!userProfile) {
+        userProfile = {
+          name: "Alejandro",
+          age: 24,
+          height: 178,
+          weight: 80.0,
+          targetLossKg: 4,
+          weeks: 8,
+          hasWatch: true,
+          weighFreq: "3days",
+          dietPreference: "balanceada",
+          habitType: "bombo",
+          customDailyCost: 1.70,
+          workoutFocus: "fullbody",
+          workoutDays: 4
+        };
+        localStorage.setItem('userProfile', JSON.stringify(userProfile));
+      }
+      await saveProfileToCloud();
     }
-    renderCoachEngine();
-    updateDashboardMetrics();
-    renderDietMeals();
+
+    // Actualizar interfaz visual
+    const greetingEl = document.getElementById('user-greeting');
+    if (greetingEl) greetingEl.innerHTML = `${userProfile.name} <span>Trainer</span>`;
+    const subEl = document.getElementById('user-goal-subtitle');
+    if (subEl) subEl.innerText = `Meta: Bajar ${userProfile.targetLossKg} kg en ${userProfile.weeks} semanas`;
+
+    if (typeof renderCoachEngine === 'function') renderCoachEngine();
+    if (typeof updateDashboardMetrics === 'function') updateDashboardMetrics();
+    if (typeof renderDietMeals === 'function') renderDietMeals();
+
   } catch (err) {
-    console.error("Error sincronizando perfil:", err);
+    console.error("Error sincronizando perfil desde la nube:", err);
+  }
+}
+
+async function saveProfileToCloud() {
+  if (!authSession || !authSession.user || !userProfile) return;
+  try {
+    // Parámetro on_conflict=id obligatorio para evitar el error de clave duplicada
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/user_profiles?on_conflict=id`, {
+      method: "POST",
+      headers: {
+        ...getAuthHeaders(),
+        "Prefer": "resolution=merge-duplicates,return=representation"
+      },
+      body: JSON.stringify({
+        id: authSession.user.id,
+        name: userProfile.name,
+        age: userProfile.age,
+        height: userProfile.height,
+        weight: userProfile.weight,
+        target_loss_kg: userProfile.targetLossKg,
+        weeks: userProfile.weeks,
+        has_watch: userProfile.hasWatch,
+        weigh_freq: userProfile.weighFreq,
+        diet_preference: userProfile.dietPreference
+      })
+    });
+
+    if (!res.ok) {
+      const errData = await res.json();
+      console.error("Error guardando perfil en Supabase:", errData);
+    }
+  } catch (err) {
+    console.error("Error guardando perfil en nube:", err);
   }
 }
 
