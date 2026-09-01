@@ -2277,7 +2277,7 @@ function renderWeightChart() {
 }
 
 // ==========================================
-// ASISTENTE DE IA ULTRA RÁPIDO & MULTI-PESTAÑA
+// ASISTENTE DE IA REAL (CORREGIDO TOKENS & ACCIONES)
 // ==========================================
 function setupTrainerChat() {
   const toggleBtn = document.getElementById('btn-toggle-trainer-chat');
@@ -2289,7 +2289,6 @@ function setupTrainerChat() {
 
   if (!toggleBtn || !chatWindow) return;
 
-  // Función auxiliar para cambiar de pestaña en la interfaz
   const navigateToTab = (tabName) => {
     const allButtons = Array.from(document.querySelectorAll('nav button, .nav-btn, .tab-btn, header button, button'));
     const targetBtn = allButtons.find(b => b.innerText && b.innerText.toLowerCase().includes(tabName.toLowerCase()));
@@ -2360,9 +2359,8 @@ function setupTrainerChat() {
 
       const systemPrompt = `Eres Alejandro Trainer Bot, coach de alto rendimiento y control de la app.
 REGLAS OBLIGATORIAS:
-1. Responde SIEMPRE en MÁXIMO 1 o 2 frases cortas (menos de 20 palabras). Sé directo y enérgico.
-2. NUNCA des explicaciones teóricas largas ni listas de pasos.
-3. Si el usuario pide una acción, añade SIEMPRE la etiqueta al final:
+1. Responde SIEMPRE de forma breve (1 o 2 frases concisas y motivadoras).
+2. Si el usuario pide una acción de la app, incluye obligatoriamente la etiqueta de comando al final:
 - Protocolos de respiración/salud: [ACTION: PROTOCOL, Tipo(vagal|coherencia|escaneo|box|cervical)]
 - Registrar comida: [ACTION: ADD_MEAL, Tipo(Desayuno|Almuerzo|Cena|Snack), Nombre, Kcal, Prot, Carbs, Grasas]
 - Guardar receta: [ACTION: CREATE_RECIPE, Nombre, Kcal, Prot, Carbs, Grasas, Ingredientes]
@@ -2380,8 +2378,8 @@ REGLAS OBLIGATORIAS:
         body: JSON.stringify({
           contents: [{ role: "user", parts: [{ text: systemPrompt + "\n\nPetición: " + text }] }],
           generationConfig: {
-            maxOutputTokens: 120, // Respuesta ultra rápida y económica
-            temperature: 0.2
+            maxOutputTokens: 800,
+            temperature: 0.3
           }
         })
       });
@@ -2392,7 +2390,7 @@ REGLAS OBLIGATORIAS:
         throw new Error(data.error?.message || "Error HTTP " + apiResponse.status);
       }
 
-      let botReply = data.candidates?.[0]?.content?.parts?.[0]?.text || "Listo.";
+      let botReply = data.candidates?.[0]?.content?.parts?.[0]?.text || "Acción completada.";
       document.getElementById(loadingId)?.remove();
 
       // ==========================================
